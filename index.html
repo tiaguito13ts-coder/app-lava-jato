@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendar lavagem</title>
+<style>
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #F1EFE8;
+  margin: 0;
+  padding: 32px 16px;
+  display: flex;
+  justify-content: center;
+  color: #2C2C2A;
+}
+.tela {
+  width: 100%;
+  max-width: 360px;
+}
+h1 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+p.hint {
+  font-size: 13px;
+  color: #5F5E5A;
+  margin: 0 0 20px;
+}
+label {
+  font-size: 12px;
+  color: #5F5E5A;
+  display: block;
+  margin-bottom: 4px;
+}
+input[type="text"],
+input[type="tel"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+}
+button.primario {
+  width: 100%;
+  padding: 12px;
+  background: #185FA5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+button.primario:disabled {
+  background: #B4B2A9;
+  cursor: default;
+}
+.mensagem-erro {
+  font-size: 12px;
+  color: #A32D2D;
+  margin: -8px 0 14px;
+  display: none;
+}
+.mensagem-erro.visivel {
+  display: block;
+}
+</style>
+</head>
+<body>
+
+<div class="tela">
+  <h1>Vamos agendar sua lavagem</h1>
+  <p class="hint">Preencha seus dados e os do seu veículo</p>
+
+  <form id="form-cadastro">
+    <label for="nome">Seu nome</label>
+    <input type="text" id="nome" placeholder="Maria Silva" required>
+
+    <label for="telefone">Seu telefone (com DDD)</label>
+    <input type="tel" id="telefone" placeholder="11999998888" required>
+
+    <label for="placa">Placa do veículo</label>
+    <input type="text" id="placa" placeholder="ABC1D23" required>
+
+    <label for="modelo">Modelo</label>
+    <input type="text" id="modelo" placeholder="Onix">
+
+    <label for="cor">Cor</label>
+    <input type="text" id="cor" placeholder="Prata">
+
+    <p class="mensagem-erro" id="mensagem-erro"></p>
+
+    <button type="submit" class="primario" id="botao-continuar">Continuar</button>
+  </form>
+</div>
+
+<!-- Biblioteca oficial do Supabase para JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+// ============================================================
+// Conexão com o Supabase
+// (esses dois valores são públicos, feitos para aparecer no
+// navegador — não tem problema estarem aqui)
+// ============================================================
+const SUPABASE_URL = "https://ezndgpgeqitwfnwyszqt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GjPh3mo9yJ-qtaJGTqsuaQ_iU-IpckC";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
+// Lógica da tela de cadastro
+// ============================================================
+const form = document.getElementById("form-cadastro");
+const botao = document.getElementById("botao-continuar");
+const mensagemErro = document.getElementById("mensagem-erro");
+
+function mostrarErro(texto) {
+  mensagemErro.textContent = texto;
+  mensagemErro.classList.add("visivel");
+}
+
+function limparErro() {
+  mensagemErro.classList.remove("visivel");
+}
+
+form.addEventListener("submit", async function (evento) {
+  evento.preventDefault(); // impede o navegador de recarregar a página
+  limparErro();
+
+  const nome = document.getElementById("nome").value.trim();
+  const telefone = document.getElementById("telefone").value.trim();
+  const placa = document.getElementById("placa").value.trim();
+  const modelo = document.getElementById("modelo").value.trim();
+  const cor = document.getElementById("cor").value.trim();
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    // Passo 1: verificar se esse telefone já é um cliente conhecido
+    const { data: clienteExistente, error: erroBusca } = await db
+      .from("clientes")
+      .select("id")
+      .eq("telefone", telefone)
+      .maybeSingle();
+
+    if (erroBusca) throw erroBusca;
+
+    let clienteId;
+
+    if (clienteExistente) {
+      clienteId = clienteExistente.id;
+    } else {
+      const { data: novoCliente, error: erroCriarCliente } = await db
+        .from("clientes")
+        .insert({ nome: nome, telefone: telefone })
+        .select("id")
+        .single();
+
+      if (erroCriarCliente) throw erroCriarCliente;
+      clienteId = novoCliente.id;
+    }
+
+    // Passo 2: criar o veículo, vinculado ao cliente
+    const { data: novoVeiculo, error: erroVeiculo } = await db
+      .from("veiculos")
+      .insert({
+        cliente_id: clienteId,
+        placa: placa,
+        modelo: modelo || null,
+        cor: cor || null
+      })
+      .select("id")
+      .single();
+
+    if (erroVeiculo) throw erroVeiculo;
+
+    window.location.href =
+      "horarios.html?cliente_id=" + clienteId + "&veiculo_id=" + novoVeiculo.id;
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarErro("Não foi possível salvar: " + (erro.message || "erro desconhecido"));
+    botao.disabled = false;
+    botao.textContent = "Continuar";
+  }
+});
+</script>
+
+</body>
+</html>

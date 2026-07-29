@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seu agendamento</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #F1EFE8;
+  margin: 0;
+  padding: 32px 16px;
+  display: flex;
+  justify-content: center;
+  color: #2C2C2A;
+}
+.tela { width: 100%; max-width: 360px; }
+h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+p.subtitulo { font-size: 13px; color: #5F5E5A; margin: 0 0 14px; }
+
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+.badge.agendado { background: #F1EFE8; color: #5F5E5A; border: 1px solid #D3D1C7; }
+.badge.em_andamento { background: #E6F1FB; color: #0C447C; }
+.badge.concluido { background: #EAF3DE; color: #27500A; }
+.badge.cancelado { background: #FCEBEB; color: #791F1F; }
+.badge.disputa { background: #FAEEDA; color: #633806; }
+
+.resumo {
+  border: 1px solid #D3D1C7;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+.resumo .linha { display: flex; justify-content: space-between; padding: 4px 0; }
+.resumo .linha span:first-child { color: #5F5E5A; }
+
+p.rotulo-foto { font-size: 12px; color: #5F5E5A; margin: 0 0 6px; }
+.fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+.foto-box {
+  aspect-ratio: 1;
+  background: #ffffff;
+  border: 1px solid #D3D1C7;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #888780;
+}
+.foto-box img { width: 100%; height: 100%; object-fit: cover; }
+.foto-box.pendente { border-style: dashed; }
+
+.carregando, .erro { font-size: 13px; color: #5F5E5A; text-align: center; padding: 40px 0; }
+.erro { color: #A32D2D; }
+
+button.secundario {
+  width: 100%;
+  padding: 10px;
+  background: #ffffff;
+  color: #2C2C2A;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="tela" id="tela">
+  <p class="carregando" id="carregando">Carregando seu agendamento...</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+const SUPABASE_URL = "https://ezndgpgeqitwfnwyszqt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GjPh3mo9yJ-qtaJGTqsuaQ_iU-IpckC";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const parametros = new URLSearchParams(window.location.search);
+const agendamentoId = parametros.get("agendamento_id");
+
+const tela = document.getElementById("tela");
+
+const rotulosStatus = {
+  agendado: "Agendado",
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  disputa: "Em análise"
+};
+
+function formatarDataHora(isoString) {
+  const data = new Date(isoString);
+  return data.toLocaleDateString("pt-BR") + " às " +
+         data.getHours().toString().padStart(2, "0") + ":" +
+         data.getMinutes().toString().padStart(2, "0");
+}
+
+async function carregarAgendamento() {
+  if (!agendamentoId) {
+    tela.innerHTML = '<p class="erro">Agendamento não encontrado.</p>';
+    return;
+  }
+
+  try {
+    // Busca o agendamento junto com os dados do veículo (join)
+    const { data: agendamento, error: erroAgendamento } = await db
+      .from("agendamentos")
+      .select("id, data_hora, status, veiculos(placa, modelo, cor)")
+      .eq("id", agendamentoId)
+      .single();
+
+    if (erroAgendamento) throw erroAgendamento;
+
+    // Busca as fotos vinculadas a esse agendamento
+    const { data: fotos, error: erroFotos } = await db
+      .from("fotos")
+      .select("tipo, url")
+      .eq("agendamento_id", agendamentoId);
+
+    if (erroFotos) throw erroFotos;
+
+    const fotoAntes = fotos.find(function (f) { return f.tipo === "antes"; });
+    const fotoDepois = fotos.find(function (f) { return f.tipo === "depois"; });
+
+    const veiculo = agendamento.veiculos;
+    const statusClasse = agendamento.status;
+    const statusTexto = rotulosStatus[agendamento.status] || agendamento.status;
+
+    tela.innerHTML =
+      '<h1>Seu agendamento</h1>' +
+      '<p class="subtitulo">' + formatarDataHora(agendamento.data_hora) + '</p>' +
+      '<span class="badge ' + statusClasse + '">' + statusTexto + '</span>' +
+      '<div class="resumo">' +
+        '<div class="linha"><span>Veículo</span><span>' + (veiculo.modelo || "-") + ' ' + (veiculo.cor || "") + '</span></div>' +
+        '<div class="linha"><span>Placa</span><span>' + veiculo.placa + '</span></div>' +
+      '</div>' +
+      '<p class="rotulo-foto">Fotos do veículo</p>' +
+      '<div class="fotos">' +
+        gerarBlocoFoto(fotoAntes, "antes") +
+        gerarBlocoFoto(fotoDepois, "depois") +
+      '</div>' +
+      '<button type="button" class="secundario" id="botao-atualizar">Atualizar</button>';
+
+    document.getElementById("botao-atualizar").addEventListener("click", carregarAgendamento);
+
+  } catch (erro) {
+    console.error(erro);
+    tela.innerHTML = '<p class="erro">Não foi possível carregar: ' + (erro.message || "erro desconhecido") + '</p>';
+  }
+}
+
+function gerarBlocoFoto(foto, tipo) {
+  if (foto) {
+    return '<div class="foto-box"><img src="' + foto.url + '" alt="Foto do veículo (' + tipo + ')"></div>';
+  }
+  const texto = tipo === "antes" ? "aguardando início" : "aguardando conclusão";
+  return '<div class="foto-box pendente">' + texto + '</div>';
+}
+
+carregarAgendamento();
+</script>
+
+</body>
+</html>
