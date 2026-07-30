@@ -136,7 +136,206 @@ async function carregarAgenda() {
         '<span class="badge ' + agendamento.status + '">' + statusTexto + '</span>';
 
       lista.appendChild(link);
+    });<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda do dia</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #F1EFE8;
+  margin: 0;
+  padding: 32px 16px;
+  display: flex;
+  justify-content: center;
+  color: #2C2C2A;
+}
+.tela { width: 100%; max-width: 360px; }
+h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+p.hint { font-size: 13px; color: #5F5E5A; margin: 0 0 16px; }
+.nav-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+input[type="date"] {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+}
+.seta {
+  padding: 10px 14px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.botao-hoje {
+  padding: 10px 12px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
+  color: #5F5E5A;
+  cursor: pointer;
+  margin-bottom: 18px;
+  width: 100%;
+}
+.item {
+  border: 1px solid #D3D1C7;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.item.em_andamento { border: 2px solid #185FA5; background: #E6F1FB; }
+.item .info p { margin: 0; }
+.item .horario { font-size: 13px; font-weight: 500; }
+.item.em_andamento .horario { color: #0C447C; }
+.item .cliente { font-size: 11px; color: #5F5E5A; margin-top: 2px; }
+.item.em_andamento .cliente { color: #0C447C; }
+
+.badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.badge.agendado { background: #F1EFE8; color: #5F5E5A; }
+.badge.em_andamento { background: #ffffff; color: #0C447C; }
+.badge.concluido { background: #EAF3DE; color: #27500A; }
+.badge.cancelado { background: #FCEBEB; color: #791F1F; }
+.badge.disputa { background: #FAEEDA; color: #633806; }
+
+.carregando, .vazio, .erro { font-size: 13px; color: #5F5E5A; text-align: center; padding: 30px 0; }
+.erro { color: #A32D2D; }
+</style>
+</head>
+<body>
+
+<div class="tela">
+  <h1>Agenda do dia</h1>
+  <div class="nav-data">
+    <button type="button" class="seta" id="botao-anterior">&larr;</button>
+    <input type="date" id="data">
+    <button type="button" class="seta" id="botao-proximo">&rarr;</button>
+  </div>
+  <button type="button" class="botao-hoje" id="botao-hoje">Ir para hoje</button>
+  <div id="lista">
+    <p class="carregando">Carregando agenda...</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+const SUPABASE_URL = "https://ezndgpgeqitwfnwyszqt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GjPh3mo9yJ-qtaJGTqsuaQ_iU-IpckC";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const inputData = document.getElementById("data");
+const lista = document.getElementById("lista");
+
+const rotulosStatus = {
+  agendado: "Agendado",
+  em_andamento: "Em andamento",
+  concluido: "Concluído",
+  cancelado: "Cancelado",
+  disputa: "Em análise"
+};
+
+// Data padrão: hoje
+inputData.value = new Date().toISOString().split("T")[0];
+
+async function carregarAgenda() {
+  lista.innerHTML = '<p class="carregando">Carregando agenda...</p>';
+
+  const dataEscolhida = inputData.value;
+  const inicioDoDia = dataEscolhida + "T00:00:00";
+  const fimDoDia = dataEscolhida + "T23:59:59";
+
+  try {
+    const { data: agendamentos, error } = await db
+      .from("agendamentos")
+      .select("id, data_hora, status, clientes(nome, telefone), veiculos(placa, modelo, cor)")
+      .gte("data_hora", inicioDoDia)
+      .lte("data_hora", fimDoDia)
+      .order("data_hora", { ascending: true });
+
+    if (error) throw error;
+
+    if (agendamentos.length === 0) {
+      lista.innerHTML = '<p class="vazio">Nenhum agendamento para esse dia.</p>';
+      return;
+    }
+
+    lista.innerHTML = "";
+    agendamentos.forEach(function (agendamento) {
+      const dataObj = new Date(agendamento.data_hora);
+      const horario = dataObj.getHours().toString().padStart(2, "0") + ":" +
+                       dataObj.getMinutes().toString().padStart(2, "0");
+      const veiculo = agendamento.veiculos;
+      const cliente = agendamento.clientes;
+      const statusTexto = rotulosStatus[agendamento.status] || agendamento.status;
+
+      const link = document.createElement("a");
+      link.href = "agendamento.html?id=" + agendamento.id;
+      link.className = "item" + (agendamento.status === "em_andamento" ? " em_andamento" : "");
+      link.innerHTML =
+        '<div class="info">' +
+          '<p class="horario">' + horario + ' · ' + (veiculo.modelo || veiculo.placa) + '</p>' +
+          '<p class="cliente">' + cliente.nome + '</p>' +
+        '</div>' +
+        '<span class="badge ' + agendamento.status + '">' + statusTexto + '</span>';
+
+      lista.appendChild(link);
     });
+
+  } catch (erro) {
+    console.error(erro);
+    lista.innerHTML = '<p class="erro">Não foi possível carregar: ' + (erro.message || "erro desconhecido") + '</p>';
+  }
+}
+
+function mudarDia(delta) {
+  const dataAtual = new Date(inputData.value + "T00:00:00");
+  dataAtual.setDate(dataAtual.getDate() + delta);
+  inputData.value = dataAtual.toISOString().split("T")[0];
+  carregarAgenda();
+}
+
+document.getElementById("botao-anterior").addEventListener("click", function () {
+  mudarDia(-1);
+});
+document.getElementById("botao-proximo").addEventListener("click", function () {
+  mudarDia(1);
+});
+document.getElementById("botao-hoje").addEventListener("click", function () {
+  inputData.value = new Date().toISOString().split("T")[0];
+  carregarAgenda();
+});
+
+inputData.addEventListener("change", carregarAgenda);
+carregarAgenda();
+</script>
+
+</body>
+</html>
+
 
   } catch (erro) {
     console.error(erro);
