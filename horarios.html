@@ -30,13 +30,13 @@ input[type="date"] {
 }
 .slots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 20px;
 }
 .slot {
-  font-size: 13px;
-  padding: 10px 0;
+  font-size: 14px;
+  padding: 16px 0;
   border-radius: 8px;
   border: 1px solid #B4B2A9;
   background: #ffffff;
@@ -85,7 +85,7 @@ button.primario:disabled { background: #B4B2A9; cursor: default; }
 
 <div class="tela">
   <h1>Escolha o horário</h1>
-  <p class="hint">Horários em cinza já estão ocupados</p>
+  <p class="hint">O lava-rápido funciona em dias alternados</p>
 
   <label for="data">Data</label>
   <input type="date" id="data">
@@ -140,19 +140,43 @@ function limparErro() {
   mensagemErro.classList.remove("visivel");
 }
 
-// Data padrão: amanhã (evita agendar num horário que já passou hoje)
+// ============================================================
+// Escala 12/36: dias de trabalho alternados
+// 29/07/2026 é um dia de trabalho conhecido, usado como referência.
+// Qualquer data cuja diferença em dias até essa referência for
+// PAR também é dia de trabalho; se for ÍMPAR, é dia de folga.
+// ============================================================
+const DATA_REFERENCIA_TRABALHO = new Date("2026-07-29T00:00:00");
+
+function ehDiaDeTrabalho(dataString) {
+  const data = new Date(dataString + "T00:00:00");
+  const diferencaEmDias = Math.round((data - DATA_REFERENCIA_TRABALHO) / (1000 * 60 * 60 * 24));
+  return diferencaEmDias % 2 === 0;
+}
+
+function formatarData(dataObj) {
+  return dataObj.toISOString().split("T")[0];
+}
+
+// Encontra o próximo dia de trabalho a partir de uma data (inclusive)
+function proximoDiaDeTrabalho(dataInicial) {
+  const data = new Date(dataInicial);
+  while (!ehDiaDeTrabalho(formatarData(data))) {
+    data.setDate(data.getDate() + 1);
+  }
+  return data;
+}
+
+// Data padrão: o próximo dia de trabalho a partir de amanhã
+// (evita agendar num horário que já passou hoje)
 const amanha = new Date();
 amanha.setDate(amanha.getDate() + 1);
-inputData.value = amanha.toISOString().split("T")[0];
+inputData.value = formatarData(proximoDiaDeTrabalho(amanha));
 
-// Gera a grade fixa de horários: 08:00 até 17:30, de 30 em 30 minutos
+// Horários fixos do expediente: 08h e 12h (blocos de 4h cada,
+// cobrindo o tempo real de 3-4h por lavagem, já que ele trabalha sozinho)
 function gerarGradeDeHorarios() {
-  const horarios = [];
-  for (let hora = 8; hora < 18; hora++) {
-    horarios.push(hora.toString().padStart(2, "0") + ":00");
-    horarios.push(hora.toString().padStart(2, "0") + ":30");
-  }
-  return horarios;
+  return ["08:00", "12:00"];
 }
 
 // Busca no banco quais horários daquele dia já estão ocupados
@@ -183,10 +207,18 @@ async function renderizarHorarios() {
   limparErro();
   horarioSelecionado = null;
   botaoConfirmar.disabled = true;
-  areaHorarios.innerHTML = '<p class="carregando">Carregando horários...</p>';
 
   const dataEscolhida = inputData.value;
   if (!dataEscolhida) return;
+
+  // Se o dia escolhido não é de trabalho (folga do 12/36), nem
+  // consulta o banco — já avisa e não mostra nenhum horário
+  if (!ehDiaDeTrabalho(dataEscolhida)) {
+    areaHorarios.innerHTML = '<p class="vazio">O lava-rápido não funciona nesse dia (dia de folga). Escolha outra data.</p>';
+    return;
+  }
+
+  areaHorarios.innerHTML = '<p class="carregando">Carregando horários...</p>';
 
   try {
     const ocupados = await buscarHorariosOcupados(dataEscolhida);
@@ -197,8 +229,12 @@ async function renderizarHorarios() {
     grade.className = "slots";
 
     todosHorarios.forEach(function (horario) {
+      const horaInicio = parseInt(horario.split(":")[0], 10);
+      const horaFim = horaInicio + 4;
+      const rotulo = horario + " - " + horaFim.toString().padStart(2, "0") + ":00";
+
       const botao = document.createElement("div");
-      botao.textContent = horario;
+      botao.textContent = rotulo;
       botao.className = "slot";
 
       if (ocupados.includes(horario)) {
