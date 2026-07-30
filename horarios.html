@@ -10,7 +10,324 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   background: #F1EFE8;
   margin: 0;
+  padding: 32px 16px;<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escolher horário</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: #F1EFE8;
+  margin: 0;
   padding: 32px 16px;
+  display: flex;
+  justify-content: center;
+  color: #2C2C2A;
+}
+.tela { width: 100%; max-width: 360px; }
+h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+p.hint { font-size: 13px; color: #5F5E5A; margin: 0 0 16px; }
+label { font-size: 12px; color: #5F5E5A; display: block; margin-bottom: 4px; }
+input[type="date"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #ffffff;
+}
+.slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.slot {
+  font-size: 14px;
+  padding: 16px 0;
+  border-radius: 8px;
+  border: 1px solid #B4B2A9;
+  background: #ffffff;
+  text-align: center;
+  cursor: pointer;
+}
+.slot.ocupado {
+  background: #D3D1C7;
+  color: #888780;
+  border: none;
+  cursor: default;
+}
+.slot.selecionado {
+  border: 2px solid #185FA5;
+  background: #E6F1FB;
+  color: #0C447C;
+  font-weight: 500;
+}
+.carregando, .vazio {
+  font-size: 13px;
+  color: #5F5E5A;
+  text-align: center;
+  padding: 20px 0;
+}
+button.primario {
+  width: 100%;
+  padding: 12px;
+  background: #185FA5;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button.primario:disabled { background: #B4B2A9; cursor: default; }
+.mensagem-erro {
+  font-size: 12px;
+  color: #A32D2D;
+  margin: -8px 0 14px;
+  display: none;
+}
+.mensagem-erro.visivel { display: block; }
+</style>
+</head>
+<body>
+
+<div class="tela">
+  <h1>Escolha o horário</h1>
+  <p class="hint">O lava-rápido funciona em dias alternados</p>
+
+  <label for="data">Data</label>
+  <input type="date" id="data">
+
+  <div id="area-horarios">
+    <p class="carregando">Carregando horários...</p>
+  </div>
+
+  <p class="mensagem-erro" id="mensagem-erro"></p>
+
+  <button type="button" class="primario" id="botao-confirmar" disabled>Confirmar horário</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+<script>
+// ============================================================
+// Conexão com o Supabase
+// ============================================================
+const SUPABASE_URL = "https://ezndgpgeqitwfnwyszqt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_GjPh3mo9yJ-qtaJGTqsuaQ_iU-IpckC";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
+// Ler cliente_id e veiculo_id que vieram da tela anterior
+// ============================================================
+const parametros = new URLSearchParams(window.location.search);
+const clienteId = parametros.get("cliente_id");
+const veiculoId = parametros.get("veiculo_id");
+
+if (!clienteId || !veiculoId) {
+  // Se alguém abrir essa página direto, sem vir do cadastro,
+  // manda de volta pro início.
+  window.location.href = "index.html";
+}
+
+// ============================================================
+// Elementos da tela
+// ============================================================
+const inputData = document.getElementById("data");
+const areaHorarios = document.getElementById("area-horarios");
+const botaoConfirmar = document.getElementById("botao-confirmar");
+const mensagemErro = document.getElementById("mensagem-erro");
+
+let horarioSelecionado = null; // guarda o horário escolhido (string ISO)
+
+function mostrarErro(texto) {
+  mensagemErro.textContent = texto;
+  mensagemErro.classList.add("visivel");
+}
+function limparErro() {
+  mensagemErro.classList.remove("visivel");
+}
+
+// ============================================================
+// Escala 12/36: dias de trabalho alternados
+// 29/07/2026 é um dia de trabalho conhecido, usado como referência.
+// Qualquer data cuja diferença em dias até essa referência for
+// PAR também é dia de trabalho; se for ÍMPAR, é dia de folga.
+// ============================================================
+const DATA_REFERENCIA_TRABALHO = new Date("2026-07-29T00:00:00");
+
+function ehDiaDeTrabalho(dataString) {
+  const data = new Date(dataString + "T00:00:00");
+  const diferencaEmDias = Math.round((data - DATA_REFERENCIA_TRABALHO) / (1000 * 60 * 60 * 24));
+  return diferencaEmDias % 2 === 0;
+}
+
+function formatarData(dataObj) {
+  return dataObj.toISOString().split("T")[0];
+}
+
+// Encontra o próximo dia de trabalho a partir de uma data (inclusive)
+function proximoDiaDeTrabalho(dataInicial) {
+  const data = new Date(dataInicial);
+  while (!ehDiaDeTrabalho(formatarData(data))) {
+    data.setDate(data.getDate() + 1);
+  }
+  return data;
+}
+
+// Data padrão: o próximo dia de trabalho a partir de amanhã
+// (evita agendar num horário que já passou hoje)
+const amanha = new Date();
+amanha.setDate(amanha.getDate() + 1);
+inputData.value = formatarData(proximoDiaDeTrabalho(amanha));
+
+// Horários fixos do expediente: 08h e 12h (blocos de 4h cada,
+// cobrindo o tempo real de 3-4h por lavagem, já que ele trabalha sozinho)
+function gerarGradeDeHorarios() {
+  return ["08:00", "12:00"];
+}
+
+// Busca no banco quais horários daquele dia já estão ocupados
+// (agendamentos com status diferente de "cancelado")
+async function buscarHorariosOcupados(dataEscolhida) {
+  const inicioDoDia = dataEscolhida + "T00:00:00";
+  const fimDoDia = dataEscolhida + "T23:59:59";
+
+  const { data, error } = await db
+    .from("agendamentos")
+    .select("data_hora")
+    .gte("data_hora", inicioDoDia)
+    .lte("data_hora", fimDoDia)
+    .neq("status", "cancelado");
+
+  if (error) throw error;
+
+  // Converte cada data_hora ocupada para o formato "HH:MM" local,
+  // pra comparar com a grade de horários
+  return data.map(function (linha) {
+    const dataObj = new Date(linha.data_hora);
+    return dataObj.getHours().toString().padStart(2, "0") + ":" +
+           dataObj.getMinutes().toString().padStart(2, "0");
+  });
+}
+
+async function renderizarHorarios() {
+  limparErro();
+  horarioSelecionado = null;
+  botaoConfirmar.disabled = true;
+
+  const dataEscolhida = inputData.value;
+  if (!dataEscolhida) return;
+
+  // Se o dia escolhido não é de trabalho (folga do 12/36), nem
+  // consulta o banco — já avisa e não mostra nenhum horário
+  if (!ehDiaDeTrabalho(dataEscolhida)) {
+    areaHorarios.innerHTML = '<p class="vazio">O lava-rápido não funciona nesse dia (dia de folga). Escolha outra data.</p>';
+    return;
+  }
+
+  areaHorarios.innerHTML = '<p class="carregando">Carregando horários...</p>';
+
+  try {
+    const ocupados = await buscarHorariosOcupados(dataEscolhida);
+    const todosHorarios = gerarGradeDeHorarios();
+
+    areaHorarios.innerHTML = "";
+    const grade = document.createElement("div");
+    grade.className = "slots";
+
+    todosHorarios.forEach(function (horario) {
+      const horaInicio = parseInt(horario.split(":")[0], 10);
+      const horaFim = horaInicio + 4;
+      const rotulo = horario + " - " + horaFim.toString().padStart(2, "0") + ":00";
+
+      const botao = document.createElement("div");
+      botao.textContent = rotulo;
+      botao.className = "slot";
+
+      if (ocupados.includes(horario)) {
+        botao.classList.add("ocupado");
+      } else {
+        botao.addEventListener("click", function () {
+          // remove seleção anterior
+          grade.querySelectorAll(".slot.selecionado").forEach(function (el) {
+            el.classList.remove("selecionado");
+          });
+          botao.classList.add("selecionado");
+          horarioSelecionado = dataEscolhida + "T" + horario + ":00";
+          botaoConfirmar.disabled = false;
+        });
+      }
+
+      grade.appendChild(botao);
+    });
+
+    areaHorarios.appendChild(grade);
+
+  } catch (erro) {
+    console.error(erro);
+    areaHorarios.innerHTML = "";
+    mostrarErro("Não foi possível carregar os horários: " + (erro.message || "erro desconhecido"));
+  }
+}
+
+inputData.addEventListener("change", renderizarHorarios);
+
+// ============================================================
+// Confirmar agendamento
+// ============================================================
+botaoConfirmar.addEventListener("click", async function () {
+  if (!horarioSelecionado) return;
+
+  limparErro();
+  botaoConfirmar.disabled = true;
+  botaoConfirmar.textContent = "Confirmando...";
+
+  try {
+    const { data: novoAgendamento, error } = await db
+      .from("agendamentos")
+      .insert({
+        cliente_id: clienteId,
+        veiculo_id: veiculoId,
+        data_hora: horarioSelecionado
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      // Esse é o erro que a trava anti-concorrência gera quando
+      // dois clientes tentam marcar o mesmo horário quase ao
+      // mesmo tempo. Damos uma mensagem clara pro usuário nesse caso.
+      if (error.code === "23505") {
+        mostrarErro("Esse horário acabou de ser reservado por outra pessoa. Escolha outro.");
+        renderizarHorarios(); // atualiza a grade
+        return;
+      }
+      throw error;
+    }
+
+    window.location.href = "status.html?agendamento_id=" + novoAgendamento.id;
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarErro("Não foi possível confirmar: " + (erro.message || "erro desconhecido"));
+  } finally {
+    botaoConfirmar.disabled = false;
+    botaoConfirmar.textContent = "Confirmar horário";
+  }
+});
+
+// Carrega a grade assim que a página abre
+renderizarHorarios();
+</script>
+
+</body>
+</html>
+
   display: flex;
   justify-content: center;
   color: #2C2C2A;
