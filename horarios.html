@@ -142,16 +142,19 @@ function limparErro() {
 
 // ============================================================
 // Escala 12/36: dias de trabalho alternados
-// 29/07/2026 é um dia de trabalho conhecido, usado como referência.
+// 31/07/2026 é um dia de FOLGA confirmado (ele está no posto fixo
+// nesse dia) — usamos essa data como referência confiável.
 // Qualquer data cuja diferença em dias até essa referência for
-// PAR também é dia de trabalho; se for ÍMPAR, é dia de folga.
+// ÍMPAR é dia de trabalho do lava-rápido; se for PAR, é folga.
 // ============================================================
-const DATA_REFERENCIA_TRABALHO = new Date("2026-07-29T00:00:00");
+const DATA_REFERENCIA_FOLGA = new Date("2026-07-31T00:00:00");
 
 function ehDiaDeTrabalho(dataString) {
   const data = new Date(dataString + "T00:00:00");
-  const diferencaEmDias = Math.round((data - DATA_REFERENCIA_TRABALHO) / (1000 * 60 * 60 * 24));
-  return diferencaEmDias % 2 === 0;
+  const diferencaEmDias = Math.round((data - DATA_REFERENCIA_FOLGA) / (1000 * 60 * 60 * 24));
+  // normaliza o resto para lidar com datas antes da referência (diferença negativa)
+  const resto = ((diferencaEmDias % 2) + 2) % 2;
+  return resto === 1;
 }
 
 function formatarData(dataObj) {
