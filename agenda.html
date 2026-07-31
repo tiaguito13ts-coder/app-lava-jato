@@ -18,14 +18,38 @@ body {
 .tela { width: 100%; max-width: 360px; }
 h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
 p.hint { font-size: 13px; color: #5F5E5A; margin: 0 0 16px; }
-input[type="date"] {
-  width: 100%;
-  padding: 10px 12px;
+.nav-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 18px;
+}
+input[type="date"] {
+  flex: 1;
+  padding: 10px 12px;
   border: 1px solid #B4B2A9;
   border-radius: 8px;
   font-size: 14px;
   background: #ffffff;
+}
+.seta {
+  padding: 10px 14px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.botao-hoje {
+  padding: 10px 12px;
+  border: 1px solid #B4B2A9;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
+  color: #5F5E5A;
+  cursor: pointer;
+  margin-bottom: 18px;
+  width: 100%;
 }
 .item {
   border: 1px solid #D3D1C7;
@@ -67,7 +91,12 @@ input[type="date"] {
 
 <div class="tela">
   <h1>Agenda do dia</h1>
-  <input type="date" id="data">
+  <div class="nav-data">
+    <button type="button" class="seta" id="botao-anterior">&larr;</button>
+    <input type="date" id="data">
+    <button type="button" class="seta" id="botao-proximo">&rarr;</button>
+  </div>
+  <button type="button" class="botao-hoje" id="botao-hoje">Ir para hoje</button>
   <div id="lista">
     <p class="carregando">Carregando agenda...</p>
   </div>
@@ -91,13 +120,53 @@ const rotulosStatus = {
   disputa: "Em análise"
 };
 
-// Data padrão: hoje
-inputData.value = new Date().toISOString().split("T")[0];
+// ============================================================
+// Escala 12/36: dias de trabalho alternados
+// 31/07/2026 é um dia de FOLGA confirmado (ele está no posto fixo
+// nesse dia) — usamos essa data como referência confiável.
+// ============================================================
+const DATA_REFERENCIA_FOLGA = new Date("2026-07-31T00:00:00");
+
+function ehDiaDeTrabalho(dataString) {
+  const data = new Date(dataString + "T00:00:00");
+  const diferencaEmDias = Math.round((data - DATA_REFERENCIA_FOLGA) / (1000 * 60 * 60 * 24));
+  const resto = ((diferencaEmDias % 2) + 2) % 2;
+  return resto === 1;
+}
+
+function formatarData(dataObj) {
+  return dataObj.toISOString().split("T")[0];
+}
+
+function proximoDiaDeTrabalho(dataInicial) {
+  const data = new Date(dataInicial);
+  while (!ehDiaDeTrabalho(formatarData(data))) {
+    data.setDate(data.getDate() + 1);
+  }
+  return data;
+}
+
+function diaDeTrabalhoAnterior(dataInicial) {
+  const data = new Date(dataInicial);
+  do {
+    data.setDate(data.getDate() - 1);
+  } while (!ehDiaDeTrabalho(formatarData(data)));
+  return data;
+}
+
+// Data padrão: hoje se for dia de trabalho, senão o próximo dia de trabalho
+inputData.value = formatarData(proximoDiaDeTrabalho(new Date()));
 
 async function carregarAgenda() {
+  const dataEscolhida = inputData.value;
+
+  if (!ehDiaDeTrabalho(dataEscolhida)) {
+    lista.innerHTML = '<p class="vazio">Dia de folga — o lava-rápido não funciona nesse dia.</p>';
+    return;
+  }
+
   lista.innerHTML = '<p class="carregando">Carregando agenda...</p>';
 
-  const dataEscolhida = inputData.value;
   const inicioDoDia = dataEscolhida + "T00:00:00";
   const fimDoDia = dataEscolhida + "T23:59:59";
 
@@ -143,6 +212,22 @@ async function carregarAgenda() {
     lista.innerHTML = '<p class="erro">Não foi possível carregar: ' + (erro.message || "erro desconhecido") + '</p>';
   }
 }
+
+document.getElementById("botao-anterior").addEventListener("click", function () {
+  const dataAtual = new Date(inputData.value + "T00:00:00");
+  inputData.value = formatarData(diaDeTrabalhoAnterior(dataAtual));
+  carregarAgenda();
+});
+document.getElementById("botao-proximo").addEventListener("click", function () {
+  const dataAtual = new Date(inputData.value + "T00:00:00");
+  dataAtual.setDate(dataAtual.getDate() + 1);
+  inputData.value = formatarData(proximoDiaDeTrabalho(dataAtual));
+  carregarAgenda();
+});
+document.getElementById("botao-hoje").addEventListener("click", function () {
+  inputData.value = formatarData(proximoDiaDeTrabalho(new Date()));
+  carregarAgenda();
+});
 
 inputData.addEventListener("change", carregarAgenda);
 carregarAgenda();
