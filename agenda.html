@@ -8,35 +8,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --dourado: #B08A2E;
-  --marinho: #1B3350;
-  --marinho-bg: #E9EEF3;
-  --preto: #16140F;
-  --creme: #FAF8F4;
-  --pedra: #D8D3C8;
-  --texto-secundario: #6B6862;
-  --branco: #FFFFFF;
-  --sucesso-bg: #EEF1E4;
-  --sucesso-texto: #47591F;
-  --erro-bg: #FBEAE6;
-  --erro-texto: #7A2E22;
-  --alerta-bg: #FBF0DF;
-  --alerta-texto: #8A4B12;
+  --dourado: #C9A445;
+  --fundo: #0E0D0B;
+  --superficie: #1B1815;
+  --borda: #33302A;
+  --texto: #F5F1E8;
+  --texto-secundario: #A69C89;
+  --azul-bg: #1B2C40; --azul-texto: #8FB4DC;
+  --verde-bg: #23301A; --verde-texto: #A9C97D;
+  --vermelho-bg: #3A1F1B; --vermelho-texto: #E0958A;
+  --ambar-bg: #3A2A14; --ambar-texto: #E3B876;
 }
 * { box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--creme);
+  background: var(--fundo);
   margin: 0;
   padding: 40px 16px;
   display: flex;
   justify-content: center;
-  color: var(--preto);
+  color: var(--texto);
 }
 .tela { width: 100%; max-width: 360px; }
-.topo { text-align: center; margin-bottom: 24px; }
-.topo img { width: 72px; height: auto; margin-bottom: 10px; }
-.linha-assinatura { width: 48px; height: 2px; background: var(--dourado); margin: 10px auto 0; }
+.topo { text-align: center; margin-bottom: 26px; }
+.topo .icone-marca { width: 72px; height: auto; margin-bottom: 8px; }
+.topo .nome-marca { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto); margin: 0; }
+.topo .tagline-marca { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--texto-secundario); margin: 3px 0 0; }
+.linha-assinatura { width: 44px; height: 2px; background: var(--dourado); margin: 12px auto 0; }
 h1 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; margin: 0 0 4px; }
 p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 16px; }
 
@@ -44,28 +42,30 @@ p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 16px; }
 input[type="date"] {
   flex: 1;
   padding: 11px 12px;
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 6px;
   font-size: 14px;
   font-family: 'Inter', sans-serif;
-  background: var(--branco);
-  color: var(--preto);
+  background: var(--superficie);
+  color: var(--texto);
+  color-scheme: dark;
 }
-input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(176, 138, 46, 0.15); }
+input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(201, 164, 69, 0.18); }
 .seta {
   padding: 11px 14px;
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 6px;
-  background: var(--branco);
+  background: var(--superficie);
+  color: var(--texto);
   font-size: 14px;
   cursor: pointer;
 }
 .seta:hover { border-color: var(--dourado); }
 .botao-hoje {
   padding: 10px 12px;
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 6px;
-  background: var(--branco);
+  background: var(--superficie);
   font-size: 12px;
   font-family: 'Inter', sans-serif;
   color: var(--texto-secundario);
@@ -76,11 +76,11 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
 .botao-hoje:hover { border-color: var(--dourado); }
 
 .item {
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 8px;
   padding: 13px;
   margin-bottom: 8px;
-  background: var(--branco);
+  background: var(--superficie);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -88,29 +88,31 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
   text-decoration: none;
   color: inherit;
 }
-.item.em_andamento { border: 2px solid var(--marinho); background: var(--marinho-bg); }
+.item.em_andamento { border: 2px solid var(--azul-texto); background: var(--azul-bg); }
 .item .info p { margin: 0; }
-.item .horario { font-size: 13px; font-weight: 600; }
-.item.em_andamento .horario { color: var(--marinho); }
+.item .horario { font-size: 13px; font-weight: 600; color: var(--texto); }
+.item.em_andamento .horario { color: var(--azul-texto); }
 .item .cliente { font-size: 11px; color: var(--texto-secundario); margin-top: 2px; }
-.item.em_andamento .cliente { color: var(--marinho); }
+.item.em_andamento .cliente { color: var(--azul-texto); opacity: 0.85; }
 
 .badge { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-.badge.agendado { background: var(--creme); color: var(--texto-secundario); }
-.badge.em_andamento { background: var(--branco); color: var(--marinho); }
-.badge.concluido { background: var(--sucesso-bg); color: var(--sucesso-texto); }
-.badge.cancelado { background: var(--erro-bg); color: var(--erro-texto); }
-.badge.disputa { background: var(--alerta-bg); color: var(--alerta-texto); }
+.badge.agendado { background: var(--fundo); color: var(--texto-secundario); }
+.badge.em_andamento { background: var(--superficie); color: var(--azul-texto); }
+.badge.concluido { background: var(--verde-bg); color: var(--verde-texto); }
+.badge.cancelado { background: var(--vermelho-bg); color: var(--vermelho-texto); }
+.badge.disputa { background: var(--ambar-bg); color: var(--ambar-texto); }
 
 .carregando, .vazio, .erro { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 30px 0; }
-.erro { color: var(--erro-texto); }
+.erro { color: var(--vermelho-texto); }
 </style>
 </head>
 <body>
 
 <div class="tela">
   <div class="topo">
-    <img src="logo.png" alt="No Capricho — Estética Automotiva">
+    <img src="icone-carro.png" alt="" class="icone-marca">
+    <p class="nome-marca">No Capricho</p>
+    <p class="tagline-marca">Estética automotiva</p>
     <div class="linha-assinatura"></div>
   </div>
 
@@ -142,11 +144,6 @@ const rotulosStatus = {
   disputa: "Em análise"
 };
 
-// ============================================================
-// Escala 12/36: dias de trabalho alternados
-// 31/07/2026 é um dia de FOLGA confirmado (ele está no posto fixo
-// nesse dia) — usamos essa data como referência confiável.
-// ============================================================
 const DATA_REFERENCIA_FOLGA = new Date("2026-07-31T00:00:00");
 
 function ehDiaDeTrabalho(dataString) {
