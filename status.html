@@ -8,46 +8,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --dourado: #B08A2E;
-  --marinho: #1B3350;
-  --marinho-bg: #E9EEF3;
-  --preto: #16140F;
-  --creme: #FAF8F4;
-  --pedra: #D8D3C8;
-  --texto-secundario: #6B6862;
-  --branco: #FFFFFF;
-  --sucesso-bg: #EEF1E4;
-  --sucesso-texto: #47591F;
-  --erro-bg: #FBEAE6;
-  --erro-texto: #7A2E22;
-  --alerta-bg: #FBF0DF;
-  --alerta-texto: #8A4B12;
+  --dourado: #C9A445;
+  --fundo: #0E0D0B;
+  --superficie: #1B1815;
+  --borda: #33302A;
+  --texto: #F5F1E8;
+  --texto-secundario: #A69C89;
+  --texto-botao: #14130F;
+  --azul-bg: #1B2C40; --azul-texto: #8FB4DC;
+  --verde-bg: #23301A; --verde-texto: #A9C97D;
+  --vermelho-bg: #3A1F1B; --vermelho-texto: #E0958A;
+  --ambar-bg: #3A2A14; --ambar-texto: #E3B876;
 }
 * { box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--creme);
+  background: var(--fundo);
   margin: 0;
   padding: 40px 16px;
   display: flex;
   justify-content: center;
-  color: var(--preto);
+  color: var(--texto);
 }
 .tela { width: 100%; max-width: 360px; }
-.topo { text-align: center; margin-bottom: 24px; }
-.topo img { width: 72px; height: auto; margin-bottom: 10px; }
-.linha-assinatura { width: 48px; height: 2px; background: var(--dourado); margin: 10px auto 0; }
+.topo { text-align: center; margin-bottom: 26px; }
+.topo .icone-marca { width: 72px; height: auto; margin-bottom: 8px; }
+.topo .nome-marca { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto); margin: 0; }
+.topo .tagline-marca { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--texto-secundario); margin: 3px 0 0; }
+.linha-assinatura { width: 44px; height: 2px; background: var(--dourado); margin: 12px auto 0; }
 h1 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; margin: 0 0 4px; }
 p.subtitulo { font-size: 13px; color: var(--texto-secundario); margin: 0 0 14px; }
 
 .badge { display: inline-block; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-bottom: 18px; }
-.badge.agendado { background: var(--creme); color: var(--texto-secundario); border: 1px solid var(--pedra); }
-.badge.em_andamento { background: var(--marinho-bg); color: var(--marinho); }
-.badge.concluido { background: var(--sucesso-bg); color: var(--sucesso-texto); }
-.badge.cancelado { background: var(--erro-bg); color: var(--erro-texto); }
-.badge.disputa { background: var(--alerta-bg); color: var(--alerta-texto); }
+.badge.agendado { background: var(--superficie); color: var(--texto-secundario); border: 1px solid var(--borda); }
+.badge.em_andamento { background: var(--azul-bg); color: var(--azul-texto); }
+.badge.concluido { background: var(--verde-bg); color: var(--verde-texto); }
+.badge.cancelado { background: var(--vermelho-bg); color: var(--vermelho-texto); }
+.badge.disputa { background: var(--ambar-bg); color: var(--ambar-texto); }
 
-.resumo { border: 1px solid var(--pedra); border-radius: 8px; padding: 14px; font-size: 13px; background: var(--branco); margin-bottom: 22px; }
+.resumo { border: 1px solid var(--borda); border-radius: 8px; padding: 14px; font-size: 13px; background: var(--superficie); margin-bottom: 22px; }
 .resumo .linha { display: flex; justify-content: space-between; padding: 5px 0; }
 .resumo .linha span:first-child { color: var(--texto-secundario); }
 
@@ -55,8 +54,8 @@ p.rotulo-foto { font-size: 12px; color: var(--texto-secundario); margin: 0 0 8px
 .fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
 .foto-box {
   aspect-ratio: 1;
-  background: var(--branco);
-  border: 1px solid var(--pedra);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
   border-radius: 8px;
   overflow: hidden;
   display: flex;
@@ -71,14 +70,14 @@ p.rotulo-foto { font-size: 12px; color: var(--texto-secundario); margin: 0 0 8px
 .foto-box.pendente { border-style: dashed; }
 
 .carregando, .erro { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 40px 0; }
-.erro { color: var(--erro-texto); }
+.erro { color: var(--vermelho-texto); }
 
 button.secundario {
   width: 100%;
   padding: 11px;
-  background: var(--branco);
-  color: var(--preto);
-  border: 1px solid var(--pedra);
+  background: var(--superficie);
+  color: var(--texto);
+  border: 1px solid var(--borda);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -87,14 +86,16 @@ button.secundario {
   margin-top: 8px;
 }
 button.secundario:hover { border-color: var(--dourado); }
-button.secundario:focus-visible { outline: 2px solid var(--marinho); outline-offset: 2px; }
+button.secundario:focus-visible { outline: 2px solid var(--dourado); outline-offset: 2px; }
 </style>
 </head>
 <body>
 
 <div class="tela" id="tela">
   <div class="topo">
-    <img src="logo.png" alt="No Capricho — Estética Automotiva">
+    <img src="icone-carro.png" alt="" class="icone-marca">
+    <p class="nome-marca">No Capricho</p>
+    <p class="tagline-marca">Estética automotiva</p>
     <div class="linha-assinatura"></div>
   </div>
   <p class="carregando" id="carregando">Carregando seu agendamento...</p>
@@ -113,7 +114,7 @@ const agendamentoId = parametros.get("agendamento_id");
 const tela = document.getElementById("tela");
 
 const cabecalhoLogo =
-  '<div class="topo"><img src="logo.png" alt="No Capricho — Estética Automotiva"><div class="linha-assinatura"></div></div>';
+  '<div class="topo"><img src="icone-carro.png" alt="" class="icone-marca"><p class="nome-marca">No Capricho</p><p class="tagline-marca">Estética automotiva</p><div class="linha-assinatura"></div></div>';
 
 const rotulosStatus = {
   agendado: "Agendado",
