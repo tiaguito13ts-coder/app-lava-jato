@@ -226,8 +226,12 @@ async function renderizarHorarios() {
 
       if (ocupados.includes(horario)) {
         botao.classList.add("ocupado");
+        botao.addEventListener("click", function () {
+          mostrarErro("Esse horário já está ocupado. Escolha outro.");
+        });
       } else {
         botao.addEventListener("click", function () {
+          limparErro();
           grade.querySelectorAll(".slot.selecionado").forEach(function (el) {
             el.classList.remove("selecionado");
           });
