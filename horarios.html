@@ -8,32 +8,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --dourado: #B08A2E;
-  --dourado-escuro: #8F701F;
-  --dourado-claro: #F3ECDA;
-  --marinho: #1B3350;
-  --preto: #16140F;
-  --creme: #FAF8F4;
-  --pedra: #D8D3C8;
-  --texto-secundario: #6B6862;
-  --branco: #FFFFFF;
-  --erro-bg: #FBEAE6;
-  --erro-texto: #7A2E22;
+  --dourado: #C9A445;
+  --dourado-escuro: #B08A2E;
+  --dourado-bg: #2A2415;
+  --fundo: #0E0D0B;
+  --superficie: #1B1815;
+  --borda: #33302A;
+  --texto: #F5F1E8;
+  --texto-secundario: #A69C89;
+  --texto-botao: #14130F;
+  --erro-bg: #3A1F1B;
+  --erro-texto: #E0958A;
 }
 * { box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--creme);
+  background: var(--fundo);
   margin: 0;
   padding: 40px 16px;
   display: flex;
   justify-content: center;
-  color: var(--preto);
+  color: var(--texto);
 }
 .tela { width: 100%; max-width: 360px; }
-.topo { text-align: center; margin-bottom: 24px; }
-.topo img { width: 72px; height: auto; margin-bottom: 10px; }
-.linha-assinatura { width: 48px; height: 2px; background: var(--dourado); margin: 10px auto 0; }
+.topo { text-align: center; margin-bottom: 26px; }
+.topo .icone-marca { width: 72px; height: auto; margin-bottom: 8px; }
+.topo .nome-marca { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto); margin: 0; }
+.topo .tagline-marca { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--texto-secundario); margin: 3px 0 0; }
+.linha-assinatura { width: 44px; height: 2px; background: var(--dourado); margin: 12px auto 0; }
 h1 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; margin: 0 0 4px; }
 p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 16px; }
 label { font-size: 12px; color: var(--texto-secundario); display: block; margin-bottom: 4px; font-weight: 500; }
@@ -41,34 +43,36 @@ input[type="date"] {
   width: 100%;
   padding: 11px 12px;
   margin-bottom: 18px;
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 6px;
   font-size: 14px;
   font-family: 'Inter', sans-serif;
-  background: var(--branco);
-  color: var(--preto);
+  background: var(--superficie);
+  color: var(--texto);
+  color-scheme: dark;
 }
-input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(176, 138, 46, 0.15); }
+input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(201, 164, 69, 0.18); }
 .slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
 .slot {
   font-size: 14px;
   font-weight: 500;
   padding: 18px 0;
   border-radius: 6px;
-  border: 1px solid var(--pedra);
-  background: var(--branco);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto);
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.slot.ocupado { background: #EFEDE7; color: var(--texto-secundario); border-color: #EFEDE7; cursor: default; }
-.slot.selecionado { border: 2px solid var(--dourado); background: var(--dourado-claro); color: var(--dourado-escuro); font-weight: 600; }
+.slot.ocupado { background: #17150F; color: var(--texto-secundario); border-color: #17150F; cursor: default; }
+.slot.selecionado { border: 2px solid var(--dourado); background: var(--dourado-bg); color: var(--dourado); font-weight: 600; }
 .carregando, .vazio { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 24px 0; }
 button.primario {
   width: 100%;
   padding: 13px;
   background: var(--dourado);
-  color: var(--preto);
+  color: var(--texto-botao);
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -77,9 +81,9 @@ button.primario {
   cursor: pointer;
   transition: background 0.15s;
 }
-button.primario:hover:not(:disabled) { background: var(--dourado-escuro); }
-button.primario:disabled { background: var(--pedra); color: var(--texto-secundario); cursor: default; }
-button.primario:focus-visible { outline: 2px solid var(--marinho); outline-offset: 2px; }
+button.primario:hover:not(:disabled) { background: #DDB65A; }
+button.primario:disabled { background: var(--borda); color: var(--texto-secundario); cursor: default; }
+button.primario:focus-visible { outline: 2px solid var(--dourado); outline-offset: 2px; }
 .mensagem-erro { font-size: 12px; color: var(--erro-texto); background: var(--erro-bg); padding: 8px 10px; border-radius: 6px; margin: -6px 0 14px; display: none; }
 .mensagem-erro.visivel { display: block; }
 </style>
@@ -88,7 +92,9 @@ button.primario:focus-visible { outline: 2px solid var(--marinho); outline-offse
 
 <div class="tela">
   <div class="topo">
-    <img src="logo.png" alt="No Capricho — Estética Automotiva">
+    <img src="icone-carro.png" alt="" class="icone-marca">
+    <p class="nome-marca">No Capricho</p>
+    <p class="tagline-marca">Estética automotiva</p>
     <div class="linha-assinatura"></div>
   </div>
 
@@ -137,13 +143,6 @@ function limparErro() {
   mensagemErro.classList.remove("visivel");
 }
 
-// ============================================================
-// Escala 12/36: dias de trabalho alternados
-// 31/07/2026 é um dia de FOLGA confirmado (ele está no posto fixo
-// nesse dia) — usamos essa data como referência confiável.
-// Qualquer data cuja diferença em dias até essa referência for
-// ÍMPAR é dia de trabalho do lava-rápido; se for PAR, é folga.
-// ============================================================
 const DATA_REFERENCIA_FOLGA = new Date("2026-07-31T00:00:00");
 
 function ehDiaDeTrabalho(dataString) {
