@@ -8,56 +8,52 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --dourado: #B08A2E;
-  --dourado-escuro: #8F701F;
-  --dourado-claro: #F3ECDA;
-  --marinho: #1B3350;
-  --marinho-bg: #E9EEF3;
-  --preto: #16140F;
-  --creme: #E5E7EB;
-  --pedra: #D8D3C8;
-  --texto-secundario: #6B6862;
-  --branco: #FFFFFF;
-  --sucesso-bg: #EEF1E4;
-  --sucesso-texto: #47591F;
-  --erro-bg: #FBEAE6;
-  --erro-texto: #7A2E22;
-  --alerta-bg: #FBF0DF;
-  --alerta-texto: #8A4B12;
+  --dourado: #C9A445;
+  --dourado-bg: #2A2415;
+  --fundo: #0E0D0B;
+  --superficie: #1B1815;
+  --borda: #33302A;
+  --texto: #F5F1E8;
+  --texto-secundario: #A69C89;
+  --azul-bg: #1B2C40; --azul-texto: #8FB4DC;
+  --verde-bg: #23301A; --verde-texto: #A9C97D;
+  --vermelho-bg: #3A1F1B; --vermelho-texto: #E0958A;
+  --ambar-bg: #3A2A14; --ambar-texto: #E3B876;
 }
 * { box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--creme);
+  background: var(--fundo);
   margin: 0;
   padding: 40px 16px;
   display: flex;
   justify-content: center;
-  color: var(--preto);
+  color: var(--texto);
 }
 .tela { width: 100%; max-width: 360px; }
 .topo { text-align: center; margin-bottom: 20px; }
-.topo img { width: 60px; height: auto; margin-bottom: 8px; }
-.linha-assinatura { width: 40px; height: 2px; background: var(--dourado); margin: 8px auto 0; }
-a.voltar { font-size: 13px; color: var(--marinho); text-decoration: none; display: inline-block; margin-bottom: 12px; font-weight: 500; }
+.topo .icone-marca { width: 56px; height: auto; margin-bottom: 6px; }
+.topo .nome-marca { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--texto); margin: 0; }
+.linha-assinatura { width: 36px; height: 2px; background: var(--dourado); margin: 8px auto 0; }
+a.voltar { font-size: 13px; color: var(--dourado); text-decoration: none; display: inline-block; margin-bottom: 12px; font-weight: 500; }
 a.voltar:hover { text-decoration: underline; }
 h1 { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; margin: 0 0 2px; }
 p.subtitulo { font-size: 12px; color: var(--texto-secundario); margin: 0 0 14px; }
 
 .badge { display: inline-block; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 20px; margin-bottom: 20px; }
-.badge.agendado { background: var(--creme); color: var(--texto-secundario); border: 1px solid var(--pedra); }
-.badge.em_andamento { background: var(--marinho-bg); color: var(--marinho); }
-.badge.concluido { background: var(--sucesso-bg); color: var(--sucesso-texto); }
-.badge.cancelado { background: var(--erro-bg); color: var(--erro-texto); }
-.badge.disputa { background: var(--alerta-bg); color: var(--alerta-texto); }
+.badge.agendado { background: var(--superficie); color: var(--texto-secundario); border: 1px solid var(--borda); }
+.badge.em_andamento { background: var(--azul-bg); color: var(--azul-texto); }
+.badge.concluido { background: var(--verde-bg); color: var(--verde-texto); }
+.badge.cancelado { background: var(--vermelho-bg); color: var(--vermelho-texto); }
+.badge.disputa { background: var(--ambar-bg); color: var(--ambar-texto); }
 
 h2 { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--texto-secundario); margin: 0 0 8px; }
 
 .foto-bloco { margin-bottom: 18px; }
 .foto-box {
   aspect-ratio: 4/3;
-  background: var(--branco);
-  border: 1px solid var(--pedra);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
   border-radius: 8px;
   overflow: hidden;
   display: flex;
@@ -74,11 +70,12 @@ label.botao-foto {
   width: 100%;
   padding: 11px;
   text-align: center;
-  background: var(--branco);
-  border: 1px solid var(--pedra);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
+  color: var(--texto);
   cursor: pointer;
 }
 label.botao-foto:hover { border-color: var(--dourado); }
@@ -90,19 +87,20 @@ label.botao-foto.enviando { opacity: 0.6; pointer-events: none; }
   text-align: left;
   padding: 11px 12px;
   border-radius: 6px;
-  border: 1px solid var(--pedra);
-  background: var(--branco);
+  border: 1px solid var(--borda);
+  background: var(--superficie);
+  color: var(--texto);
   font-size: 13px;
   font-weight: 500;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
 }
-.status-botao.passado { opacity: 0.45; cursor: default; }
-.status-botao.atual { border: 2px solid var(--marinho); background: var(--marinho-bg); color: var(--marinho); cursor: default; }
+.status-botao.passado { opacity: 0.4; cursor: default; }
+.status-botao.atual { border: 2px solid var(--azul-texto); background: var(--azul-bg); color: var(--azul-texto); cursor: default; }
 .status-botao.futuro { cursor: pointer; }
 .status-botao.futuro:hover { border-color: var(--dourado); }
 
-.mensagem-erro { font-size: 12px; color: var(--erro-texto); background: var(--erro-bg); padding: 8px 10px; border-radius: 6px; margin: 8px 0; display: none; }
+.mensagem-erro { font-size: 12px; color: var(--vermelho-texto); background: var(--vermelho-bg); padding: 8px 10px; border-radius: 6px; margin: 8px 0; display: none; }
 .mensagem-erro.visivel { display: block; }
 .carregando, .erro { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 40px 0; }
 </style>
@@ -171,7 +169,7 @@ async function carregarTela() {
     const cliente = agendamento.clientes;
 
     tela.innerHTML =
-      '<div class="topo"><img src="logo.png" alt="No Capricho"><div class="linha-assinatura"></div></div>' +
+      '<div class="topo"><img src="icone-carro.png" alt="" class="icone-marca"><p class="nome-marca">No Capricho</p><div class="linha-assinatura"></div></div>' +
       '<a class="voltar" href="agenda.html">&larr; Agenda do dia</a>' +
       '<h1>' + (veiculo.modelo || veiculo.placa) + ' — ' + cliente.nome + '</h1>' +
       '<p class="subtitulo">' + formatarDataHora(agendamento.data_hora) + ' · ' + veiculo.placa + '</p>' +
