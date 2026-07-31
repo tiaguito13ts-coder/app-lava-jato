@@ -8,49 +8,53 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --dourado: #B08A2E;
-  --dourado-escuro: #8F701F;
-  --marinho: #1B3350;
-  --preto: #16140F;
-  --creme: #E5E7EB;
-  --pedra: #D8D3C8;
-  --texto-secundario: #6B6862;
-  --branco: #FFFFFF;
-  --erro-bg: #FBEAE6;
-  --erro-texto: #7A2E22;
+  --dourado: #C9A445;
+  --dourado-escuro: #B08A2E;
+  --fundo: #0E0D0B;
+  --superficie: #1B1815;
+  --borda: #33302A;
+  --texto: #F5F1E8;
+  --texto-secundario: #A69C89;
+  --texto-botao: #14130F;
+  --erro-bg: #3A1F1B;
+  --erro-texto: #E0958A;
 }
 * { box-sizing: border-box; }
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--creme);
+  background: var(--fundo);
   margin: 0;
   padding: 40px 16px;
   display: flex;
   justify-content: center;
-  color: var(--preto);
+  color: var(--texto);
 }
 .tela { width: 100%; max-width: 360px; }
-.topo { text-align: center; margin-bottom: 24px; }
-.topo img { width: 84px; height: auto; margin-bottom: 12px; }
-.topo .marca {
+.topo { text-align: center; margin-bottom: 26px; }
+.topo .icone-marca { width: 84px; height: auto; margin-bottom: 8px; }
+.topo .nome-marca {
   font-family: 'Playfair Display', serif;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  color: var(--texto);
   margin: 0;
 }
-.linha-assinatura {
-  width: 48px;
-  height: 2px;
-  background: var(--dourado);
-  margin: 10px auto 0;
+.topo .tagline-marca {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texto-secundario);
+  margin: 3px 0 0;
 }
+.linha-assinatura { width: 44px; height: 2px; background: var(--dourado); margin: 14px auto 0; }
 h1 {
   font-family: 'Playfair Display', serif;
   font-size: 20px;
   font-weight: 700;
   margin: 0 0 4px;
+  color: var(--texto);
 }
 p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 22px; }
 label {
@@ -65,23 +69,20 @@ input[type="tel"] {
   width: 100%;
   padding: 11px 12px;
   margin-bottom: 14px;
-  border: 1px solid var(--pedra);
+  border: 1px solid var(--borda);
   border-radius: 6px;
   font-size: 14px;
   font-family: 'Inter', sans-serif;
-  background: var(--branco);
-  color: var(--preto);
+  background: var(--superficie);
+  color: var(--texto);
 }
-input:focus {
-  outline: none;
-  border-color: var(--dourado);
-  box-shadow: 0 0 0 3px rgba(176, 138, 46, 0.15);
-}
+input::placeholder { color: #6B6659; }
+input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(201, 164, 69, 0.18); }
 button.primario {
   width: 100%;
   padding: 13px;
   background: var(--dourado);
-  color: var(--preto);
+  color: var(--texto-botao);
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -91,9 +92,9 @@ button.primario {
   margin-top: 4px;
   transition: background 0.15s;
 }
-button.primario:hover:not(:disabled) { background: var(--dourado-escuro); }
-button.primario:disabled { background: var(--pedra); color: var(--texto-secundario); cursor: default; }
-button.primario:focus-visible { outline: 2px solid var(--marinho); outline-offset: 2px; }
+button.primario:hover:not(:disabled) { background: #DDB65A; }
+button.primario:disabled { background: var(--borda); color: var(--texto-secundario); cursor: default; }
+button.primario:focus-visible { outline: 2px solid var(--dourado); outline-offset: 2px; }
 .mensagem-erro {
   font-size: 12px;
   color: var(--erro-texto);
@@ -110,7 +111,9 @@ button.primario:focus-visible { outline: 2px solid var(--marinho); outline-offse
 
 <div class="tela">
   <div class="topo">
-    <img src="logo.png" alt="No Capricho — Estética Automotiva">
+    <img src="icone-carro.png" alt="" class="icone-marca">
+    <p class="nome-marca">No Capricho</p>
+    <p class="tagline-marca">Estética automotiva</p>
     <div class="linha-assinatura"></div>
   </div>
 
@@ -139,7 +142,6 @@ button.primario:focus-visible { outline: 2px solid var(--marinho); outline-offse
   </form>
 </div>
 
-<!-- Biblioteca oficial do Supabase para JavaScript -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
