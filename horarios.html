@@ -37,36 +37,36 @@ body {
 .topo .tagline-marca { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--texto-secundario); margin: 3px 0 0; }
 .linha-assinatura { width: 44px; height: 2px; background: var(--dourado); margin: 12px auto 0; }
 h1 { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; margin: 0 0 4px; }
-p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 16px; }
-label { font-size: 12px; color: var(--texto-secundario); display: block; margin-bottom: 4px; font-weight: 500; }
-input[type="date"] {
-  width: 100%;
-  padding: 11px 12px;
-  margin-bottom: 18px;
+p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 18px; }
+
+.dia-card {
   border: 1px solid var(--borda);
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: 'Inter', sans-serif;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
   background: var(--superficie);
-  color: var(--texto);
-  color-scheme: dark;
 }
-input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(201, 164, 69, 0.18); }
-.slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.dia-card .dia-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  text-transform: capitalize;
+}
+.dia-card .slots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .slot {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 18px 0;
+  padding: 12px 0;
   border-radius: 6px;
   border: 1px solid var(--borda);
-  background: var(--superficie);
+  background: var(--fundo);
   color: var(--texto);
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.slot.ocupado { background: #17150F; color: var(--texto-secundario); border-color: #17150F; cursor: default; }
 .slot.selecionado { border: 2px solid var(--dourado); background: var(--dourado-bg); color: var(--dourado); font-weight: 600; }
+
 .carregando, .vazio { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 24px 0; }
 button.primario {
   width: 100%;
@@ -80,11 +80,12 @@ button.primario {
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: background 0.15s;
+  margin-top: 4px;
 }
 button.primario:hover:not(:disabled) { background: #DDB65A; }
 button.primario:disabled { background: var(--borda); color: var(--texto-secundario); cursor: default; }
 button.primario:focus-visible { outline: 2px solid var(--dourado); outline-offset: 2px; }
-.mensagem-erro { font-size: 12px; color: var(--erro-texto); background: var(--erro-bg); padding: 8px 10px; border-radius: 6px; margin: -6px 0 14px; display: none; }
+.mensagem-erro { font-size: 12px; color: var(--erro-texto); background: var(--erro-bg); padding: 8px 10px; border-radius: 6px; margin: 0 0 14px; display: none; }
 .mensagem-erro.visivel { display: block; }
 </style>
 </head>
@@ -99,12 +100,9 @@ button.primario:focus-visible { outline: 2px solid var(--dourado); outline-offse
   </div>
 
   <h1>Escolha o horário</h1>
-  <p class="hint">O lava-rápido funciona em dias alternados</p>
+  <p class="hint">Próximos dias com vaga disponível</p>
 
-  <label for="data">Data</label>
-  <input type="date" id="data">
-
-  <div id="area-horarios">
+  <div id="area-dias">
     <p class="carregando">Carregando horários...</p>
   </div>
 
@@ -128,8 +126,7 @@ if (!clienteId || !veiculoId) {
   window.location.href = "index.html";
 }
 
-const inputData = document.getElementById("data");
-const areaHorarios = document.getElementById("area-horarios");
+const areaDias = document.getElementById("area-dias");
 const botaoConfirmar = document.getElementById("botao-confirmar");
 const mensagemErro = document.getElementById("mensagem-erro");
 
@@ -143,6 +140,11 @@ function limparErro() {
   mensagemErro.classList.remove("visivel");
 }
 
+// ============================================================
+// Escala 12/36: dias de trabalho alternados
+// 31/07/2026 é um dia de FOLGA confirmado (ele está no posto fixo
+// nesse dia) — usamos essa data como referência confiável.
+// ============================================================
 const DATA_REFERENCIA_FOLGA = new Date("2026-07-31T00:00:00");
 
 function ehDiaDeTrabalho(dataString) {
@@ -156,104 +158,122 @@ function formatarData(dataObj) {
   return dataObj.toISOString().split("T")[0];
 }
 
-function proximoDiaDeTrabalho(dataInicial) {
-  const data = new Date(dataInicial);
-  while (!ehDiaDeTrabalho(formatarData(data))) {
-    data.setDate(data.getDate() + 1);
-  }
-  return data;
+function formatarRotuloDia(dataString) {
+  const data = new Date(dataString + "T00:00:00");
+  const rotulo = data.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+  return rotulo;
 }
 
-const amanha = new Date();
-amanha.setDate(amanha.getDate() + 1);
-inputData.value = formatarData(proximoDiaDeTrabalho(amanha));
+const GRADE_HORARIOS = ["08:00", "12:00"];
+const QUANTIDADE_DIAS_COM_VAGA = 6;   // quantos dias com vaga livre mostrar
+const LIMITE_DIAS_VARRIDOS = 40;      // segurança pra não escanear pra sempre
 
-function gerarGradeDeHorarios() {
-  return ["08:00", "12:00"];
-}
-
-async function buscarHorariosOcupados(dataEscolhida) {
-  const inicioDoDia = dataEscolhida + "T00:00:00";
-  const fimDoDia = dataEscolhida + "T23:59:59";
-
-  const { data, error } = await db
-    .from("agendamentos")
-    .select("data_hora")
-    .gte("data_hora", inicioDoDia)
-    .lte("data_hora", fimDoDia)
-    .neq("status", "cancelado");
-
-  if (error) throw error;
-
-  return data.map(function (linha) {
-    const dataObj = new Date(linha.data_hora);
-    return dataObj.getHours().toString().padStart(2, "0") + ":" +
-           dataObj.getMinutes().toString().padStart(2, "0");
-  });
-}
-
-async function renderizarHorarios() {
+async function carregarProximosDiasComVaga() {
   limparErro();
-  horarioSelecionado = null;
+  areaDias.innerHTML = '<p class="carregando">Carregando horários...</p>';
   botaoConfirmar.disabled = true;
+  horarioSelecionado = null;
 
-  const dataEscolhida = inputData.value;
-  if (!dataEscolhida) return;
+  // Monta a lista de dias de trabalho candidatos, a partir de amanhã
+  const diasCandidatos = [];
+  const cursor = new Date();
+  cursor.setDate(cursor.getDate() + 1);
+  for (let i = 0; i < LIMITE_DIAS_VARRIDOS && diasCandidatos.length < 20; i++) {
+    const dataStr = formatarData(cursor);
+    if (ehDiaDeTrabalho(dataStr)) diasCandidatos.push(dataStr);
+    cursor.setDate(cursor.getDate() + 1);
+  }
 
-  if (!ehDiaDeTrabalho(dataEscolhida)) {
-    areaHorarios.innerHTML = '<p class="vazio">O lava-rápido não funciona nesse dia (dia de folga). Escolha outra data.</p>';
+  if (diasCandidatos.length === 0) {
+    areaDias.innerHTML = '<p class="vazio">Não foi possível carregar os próximos dias de trabalho.</p>';
     return;
   }
 
-  areaHorarios.innerHTML = '<p class="carregando">Carregando horários...</p>';
+  const inicio = diasCandidatos[0] + "T00:00:00";
+  const fim = diasCandidatos[diasCandidatos.length - 1] + "T23:59:59";
 
   try {
-    const ocupados = await buscarHorariosOcupados(dataEscolhida);
-    const todosHorarios = gerarGradeDeHorarios();
+    const { data, error } = await db
+      .from("agendamentos")
+      .select("data_hora")
+      .gte("data_hora", inicio)
+      .lte("data_hora", fim)
+      .neq("status", "cancelado");
 
-    areaHorarios.innerHTML = "";
-    const grade = document.createElement("div");
-    grade.className = "slots";
+    if (error) throw error;
 
-    todosHorarios.forEach(function (horario) {
-      const horaInicio = parseInt(horario.split(":")[0], 10);
-      const horaFim = horaInicio + 4;
-      const rotulo = horario + " - " + horaFim.toString().padStart(2, "0") + ":00";
+    // Agrupa horários ocupados por data (ex: "2026-08-02": ["08:00"])
+    const ocupadosPorDia = {};
+    data.forEach(function (linha) {
+      const dataObj = new Date(linha.data_hora);
+      const dataStr = formatarData(dataObj);
+      const horaStr = dataObj.getHours().toString().padStart(2, "0") + ":" +
+                       dataObj.getMinutes().toString().padStart(2, "0");
+      if (!ocupadosPorDia[dataStr]) ocupadosPorDia[dataStr] = [];
+      ocupadosPorDia[dataStr].push(horaStr);
+    });
 
-      const botao = document.createElement("div");
-      botao.textContent = rotulo;
-      botao.className = "slot";
-
-      if (ocupados.includes(horario)) {
-        botao.classList.add("ocupado");
-        botao.addEventListener("click", function () {
-          mostrarErro("Esse horário já está ocupado. Escolha outro.");
+    // Filtra só os dias que têm pelo menos 1 horário livre
+    const diasComVaga = diasCandidatos
+      .map(function (dataStr) {
+        const ocupados = ocupadosPorDia[dataStr] || [];
+        const disponiveis = GRADE_HORARIOS.filter(function (h) {
+          return !ocupados.includes(h);
         });
-      } else {
+        return { data: dataStr, disponiveis: disponiveis };
+      })
+      .filter(function (dia) { return dia.disponiveis.length > 0; })
+      .slice(0, QUANTIDADE_DIAS_COM_VAGA);
+
+    if (diasComVaga.length === 0) {
+      areaDias.innerHTML = '<p class="vazio">Nenhum horário disponível nos próximos dias. Tente novamente mais tarde.</p>';
+      return;
+    }
+
+    areaDias.innerHTML = "";
+    diasComVaga.forEach(function (dia) {
+      const card = document.createElement("div");
+      card.className = "dia-card";
+
+      const titulo = document.createElement("p");
+      titulo.className = "dia-titulo";
+      titulo.textContent = formatarRotuloDia(dia.data);
+      card.appendChild(titulo);
+
+      const grade = document.createElement("div");
+      grade.className = "slots";
+
+      dia.disponiveis.forEach(function (horario) {
+        const horaInicio = parseInt(horario.split(":")[0], 10);
+        const horaFim = horaInicio + 4;
+        const rotulo = horario + " - " + horaFim.toString().padStart(2, "0") + ":00";
+
+        const botao = document.createElement("div");
+        botao.textContent = rotulo;
+        botao.className = "slot";
         botao.addEventListener("click", function () {
           limparErro();
-          grade.querySelectorAll(".slot.selecionado").forEach(function (el) {
+          document.querySelectorAll(".slot.selecionado").forEach(function (el) {
             el.classList.remove("selecionado");
           });
           botao.classList.add("selecionado");
-          horarioSelecionado = dataEscolhida + "T" + horario + ":00";
+          horarioSelecionado = dia.data + "T" + horario + ":00";
           botaoConfirmar.disabled = false;
         });
-      }
 
-      grade.appendChild(botao);
+        grade.appendChild(botao);
+      });
+
+      card.appendChild(grade);
+      areaDias.appendChild(card);
     });
-
-    areaHorarios.appendChild(grade);
 
   } catch (erro) {
     console.error(erro);
-    areaHorarios.innerHTML = "";
+    areaDias.innerHTML = "";
     mostrarErro("Não foi possível carregar os horários: " + (erro.message || "erro desconhecido"));
   }
 }
-
-inputData.addEventListener("change", renderizarHorarios);
 
 botaoConfirmar.addEventListener("click", async function () {
   if (!horarioSelecionado) return;
@@ -275,7 +295,7 @@ botaoConfirmar.addEventListener("click", async function () {
 
     if (error) {
       if (error.code === "23505") {
-        await renderizarHorarios();
+        await carregarProximosDiasComVaga();
         mostrarErro("Esse horário acabou de ser reservado por outra pessoa. Escolha outro.");
         return;
       }
@@ -293,7 +313,7 @@ botaoConfirmar.addEventListener("click", async function () {
   }
 });
 
-renderizarHorarios();
+carregarProximosDiasComVaga();
 </script>
 
 </body>
