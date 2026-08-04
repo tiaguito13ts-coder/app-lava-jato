@@ -78,6 +78,17 @@ input[type="tel"] {
 }
 input::placeholder { color: #6B6659; }
 input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px rgba(201, 164, 69, 0.18); }
+.campo { position: relative; margin-bottom: 14px; }
+.campo .icone-campo {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  line-height: 1;
+  pointer-events: none;
+}
+.campo input { padding-left: 42px; margin-bottom: 0; }
 button.primario {
   width: 100%;
   padding: 13px;
@@ -122,19 +133,34 @@ button.primario:focus-visible { outline: 2px solid var(--dourado); outline-offse
 
   <form id="form-cadastro">
     <label for="nome">Seu nome</label>
-    <input type="text" id="nome" placeholder="Maria Silva" required>
+    <div class="campo">
+      <span class="icone-campo">👤</span>
+      <input type="text" id="nome" placeholder="Maria Silva" required>
+    </div>
 
     <label for="telefone">Seu telefone (com DDD)</label>
-    <input type="tel" id="telefone" placeholder="11999998888" required>
+    <div class="campo">
+      <span class="icone-campo">📱</span>
+      <input type="tel" id="telefone" placeholder="11999998888" required>
+    </div>
 
     <label for="placa">Placa do veículo</label>
-    <input type="text" id="placa" placeholder="ABC1D23" required>
+    <div class="campo">
+      <span class="icone-campo">🔢</span>
+      <input type="text" id="placa" placeholder="ABC1D23" required>
+    </div>
 
     <label for="modelo">Modelo</label>
-    <input type="text" id="modelo" placeholder="Onix">
+    <div class="campo">
+      <span class="icone-campo">🚘</span>
+      <input type="text" id="modelo" placeholder="Onix">
+    </div>
 
     <label for="cor">Cor</label>
-    <input type="text" id="cor" placeholder="Prata">
+    <div class="campo">
+      <span class="icone-campo">🎨</span>
+      <input type="text" id="cor" placeholder="Prata">
+    </div>
 
     <p class="mensagem-erro" id="mensagem-erro"></p>
 
