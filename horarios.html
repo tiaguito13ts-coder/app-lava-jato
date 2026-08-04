@@ -275,8 +275,8 @@ botaoConfirmar.addEventListener("click", async function () {
 
     if (error) {
       if (error.code === "23505") {
+        await renderizarHorarios();
         mostrarErro("Esse horário acabou de ser reservado por outra pessoa. Escolha outro.");
-        renderizarHorarios();
         return;
       }
       throw error;
