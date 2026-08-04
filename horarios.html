@@ -164,6 +164,10 @@ function formatarRotuloDia(dataString) {
   return rotulo;
 }
 
+// Fuso horário fixo de Brasília. O Brasil não observa mais
+// horário de verão desde 2019, então -03:00 é seguro o ano todo.
+// Sem isso, o banco assume UTC e os horários ficam 3h errados.
+const FUSO_BRASILIA = "-03:00";
 const GRADE_HORARIOS = ["08:00", "12:00"];
 const QUANTIDADE_DIAS_COM_VAGA = 6;   // quantos dias com vaga livre mostrar
 const LIMITE_DIAS_VARRIDOS = 40;      // segurança pra não escanear pra sempre
@@ -189,8 +193,8 @@ async function carregarProximosDiasComVaga() {
     return;
   }
 
-  const inicio = diasCandidatos[0] + "T00:00:00";
-  const fim = diasCandidatos[diasCandidatos.length - 1] + "T23:59:59";
+  const inicio = diasCandidatos[0] + "T00:00:00" + FUSO_BRASILIA;
+  const fim = diasCandidatos[diasCandidatos.length - 1] + "T23:59:59" + FUSO_BRASILIA;
 
   try {
     const { data, error } = await db
@@ -257,7 +261,7 @@ async function carregarProximosDiasComVaga() {
             el.classList.remove("selecionado");
           });
           botao.classList.add("selecionado");
-          horarioSelecionado = dia.data + "T" + horario + ":00";
+          horarioSelecionado = dia.data + "T" + horario + ":00" + FUSO_BRASILIA;
           botaoConfirmar.disabled = false;
         });
 
