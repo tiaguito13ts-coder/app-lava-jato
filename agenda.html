@@ -185,8 +185,8 @@ async function carregarAgenda() {
 
   lista.innerHTML = '<p class="carregando">Carregando agenda...</p>';
 
-  const inicioDoDia = dataEscolhida + "T00:00:00";
-  const fimDoDia = dataEscolhida + "T23:59:59";
+  const inicioDoDia = dataEscolhida + "T00:00:00-03:00";
+  const fimDoDia = dataEscolhida + "T23:59:59-03:00";
 
   try {
     const { data: agendamentos, error } = await db
