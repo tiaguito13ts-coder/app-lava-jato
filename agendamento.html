@@ -50,6 +50,7 @@ p.subtitulo { font-size: 12px; color: var(--texto-secundario); margin: 0 0 14px;
 h2 { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--texto-secundario); margin: 0 0 8px; }
 
 .foto-bloco { margin-bottom: 18px; }
+.galeria { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
 .foto-box {
   aspect-ratio: 4/3;
   background: var(--superficie);
@@ -59,11 +60,12 @@ h2 { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color:
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
   font-size: 12px;
   color: var(--texto-secundario);
+  cursor: pointer;
 }
 .foto-box img { width: 100%; height: 100%; object-fit: cover; }
+.foto-box.vazia { grid-column: span 2; cursor: default; }
 input[type="file"] { display: none; }
 label.botao-foto {
   display: block;
@@ -80,6 +82,21 @@ label.botao-foto {
 }
 label.botao-foto:hover { border-color: var(--dourado); }
 label.botao-foto.enviando { opacity: 0.6; pointer-events: none; }
+p.limite-fotos { font-size: 12px; color: var(--texto-secundario); text-align: center; margin: 0; }
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 24px;
+  cursor: zoom-out;
+}
+.lightbox.aberto { display: flex; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
 
 .status-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .status-botao {
@@ -111,6 +128,10 @@ label.botao-foto.enviando { opacity: 0.6; pointer-events: none; }
   <p class="carregando">Carregando...</p>
 </div>
 
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" src="" alt="Foto ampliada">
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
@@ -132,6 +153,7 @@ const rotulosStatus = {
 };
 
 const ordemStatus = ["agendado", "em_andamento", "concluido"];
+const LIMITE_FOTOS_POR_TIPO = 4;
 
 function formatarDataHora(isoString) {
   const data = new Date(isoString);
@@ -139,6 +161,15 @@ function formatarDataHora(isoString) {
          data.getHours().toString().padStart(2, "0") + ":" +
          data.getMinutes().toString().padStart(2, "0");
 }
+
+function abrirLightbox(url) {
+  document.getElementById("lightbox-img").src = url;
+  document.getElementById("lightbox").classList.add("aberto");
+}
+function fecharLightbox() {
+  document.getElementById("lightbox").classList.remove("aberto");
+}
+document.getElementById("lightbox").addEventListener("click", fecharLightbox);
 
 async function carregarTela() {
   if (!agendamentoId) {
@@ -158,12 +189,13 @@ async function carregarTela() {
     const { data: fotos, error: erroFotos } = await db
       .from("fotos")
       .select("tipo, url")
-      .eq("agendamento_id", agendamentoId);
+      .eq("agendamento_id", agendamentoId)
+      .order("timestamp_servidor", { ascending: true });
 
     if (erroFotos) throw erroFotos;
 
-    const fotoAntes = fotos.find(function (f) { return f.tipo === "antes"; });
-    const fotoDepois = fotos.find(function (f) { return f.tipo === "depois"; });
+    const fotosAntes = fotos.filter(function (f) { return f.tipo === "antes"; });
+    const fotosDepois = fotos.filter(function (f) { return f.tipo === "depois"; });
 
     const veiculo = agendamento.veiculos;
     const cliente = agendamento.clientes;
@@ -175,11 +207,11 @@ async function carregarTela() {
       '<p class="subtitulo">' + formatarDataHora(agendamento.data_hora) + ' · ' + veiculo.placa + '</p>' +
       '<span class="badge ' + agendamento.status + '" id="badge-status">' + rotulosStatus[agendamento.status] + '</span>' +
 
-      '<h2>Foto de antes</h2>' +
-      '<div class="foto-bloco">' + gerarBlocoFoto(fotoAntes, "antes") + '</div>' +
+      '<h2>Fotos de antes (' + fotosAntes.length + '/' + LIMITE_FOTOS_POR_TIPO + ')</h2>' +
+      '<div class="foto-bloco">' + gerarGaleria(fotosAntes, "antes") + '</div>' +
 
-      '<h2>Foto de depois</h2>' +
-      '<div class="foto-bloco">' + gerarBlocoFoto(fotoDepois, "depois") + '</div>' +
+      '<h2>Fotos de depois (' + fotosDepois.length + '/' + LIMITE_FOTOS_POR_TIPO + ')</h2>' +
+      '<div class="foto-bloco">' + gerarGaleria(fotosDepois, "depois") + '</div>' +
 
       '<h2>Status</h2>' +
       '<div class="status-lista" id="status-lista"></div>' +
@@ -187,6 +219,7 @@ async function carregarTela() {
 
     montarBotoesDeStatus(agendamento.status);
     ligarInputsDeFoto();
+    ligarCliqueNasFotos();
 
   } catch (erro) {
     console.error(erro);
@@ -194,15 +227,35 @@ async function carregarTela() {
   }
 }
 
-function gerarBlocoFoto(foto, tipo) {
-  if (foto) {
-    return '<div class="foto-box"><img src="' + foto.url + '" alt="Foto (' + tipo + ')"></div>';
+function gerarGaleria(listaFotos, tipo) {
+  let html = '<div class="galeria">';
+
+  if (listaFotos.length === 0) {
+    html += '<div class="foto-box vazia">Nenhuma foto ainda</div>';
+  } else {
+    listaFotos.forEach(function (foto) {
+      html += '<div class="foto-box" data-url="' + foto.url + '"><img src="' + foto.url + '" alt="Foto (' + tipo + ')"></div>';
+    });
   }
-  return (
-    '<div class="foto-box">Nenhuma foto ainda</div>' +
-    '<label class="botao-foto" for="input-' + tipo + '">Tirar foto de ' + tipo + '</label>' +
-    '<input type="file" id="input-' + tipo + '" accept="image/*" capture="environment" data-tipo="' + tipo + '">'
-  );
+  html += '</div>';
+
+  if (listaFotos.length < LIMITE_FOTOS_POR_TIPO) {
+    html +=
+      '<label class="botao-foto" for="input-' + tipo + '">+ Adicionar foto de ' + tipo + '</label>' +
+      '<input type="file" id="input-' + tipo + '" accept="image/*" capture="environment" data-tipo="' + tipo + '">';
+  } else {
+    html += '<p class="limite-fotos">Limite de ' + LIMITE_FOTOS_POR_TIPO + ' fotos atingido</p>';
+  }
+
+  return html;
+}
+
+function ligarCliqueNasFotos() {
+  document.querySelectorAll(".foto-box[data-url]").forEach(function (box) {
+    box.addEventListener("click", function () {
+      abrirLightbox(box.getAttribute("data-url"));
+    });
+  });
 }
 
 function ligarInputsDeFoto() {
@@ -259,7 +312,7 @@ async function enviarFoto(arquivo, tipo) {
     mensagemErro.classList.add("visivel");
     if (label) {
       label.classList.remove("enviando");
-      label.textContent = "Tirar foto de " + tipo;
+      label.textContent = "+ Adicionar foto de " + tipo;
     }
   }
 }
