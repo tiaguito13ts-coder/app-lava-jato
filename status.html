@@ -50,7 +50,7 @@ p.subtitulo { font-size: 13px; color: var(--texto-secundario); margin: 0 0 14px;
 .resumo .linha { display: flex; justify-content: space-between; padding: 5px 0; }
 .resumo .linha span:first-child { color: var(--texto-secundario); }
 
-p.rotulo-foto { font-size: 12px; color: var(--texto-secundario); margin: 0 0 8px; font-weight: 500; }
+p.rotulo-foto { font-size: 12px; color: var(--texto-secundario); margin: 14px 0 8px; font-weight: 500; }
 .fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
 .foto-box {
   aspect-ratio: 1;
@@ -65,9 +65,24 @@ p.rotulo-foto { font-size: 12px; color: var(--texto-secundario); margin: 0 0 8px
   color: var(--texto-secundario);
   text-align: center;
   padding: 8px;
+  cursor: pointer;
 }
 .foto-box img { width: 100%; height: 100%; object-fit: cover; }
-.foto-box.pendente { border-style: dashed; }
+.foto-box.pendente { border-style: dashed; cursor: default; }
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 24px;
+  cursor: zoom-out;
+}
+.lightbox.aberto { display: flex; }
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
 
 .carregando, .erro { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 40px 0; }
 .erro { color: var(--vermelho-texto); }
@@ -101,6 +116,10 @@ button.secundario:focus-visible { outline: 2px solid var(--dourado); outline-off
   <p class="carregando" id="carregando">Carregando seu agendamento...</p>
 </div>
 
+<div class="lightbox" id="lightbox">
+  <img id="lightbox-img" src="" alt="Foto ampliada">
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
@@ -131,6 +150,15 @@ function formatarDataHora(isoString) {
          data.getMinutes().toString().padStart(2, "0");
 }
 
+function abrirLightbox(url) {
+  document.getElementById("lightbox-img").src = url;
+  document.getElementById("lightbox").classList.add("aberto");
+}
+function fecharLightbox() {
+  document.getElementById("lightbox").classList.remove("aberto");
+}
+document.getElementById("lightbox").addEventListener("click", fecharLightbox);
+
 async function carregarAgendamento() {
   if (!agendamentoId) {
     tela.innerHTML = cabecalhoLogo + '<p class="erro">Agendamento não encontrado.</p>';
@@ -149,12 +177,13 @@ async function carregarAgendamento() {
     const { data: fotos, error: erroFotos } = await db
       .from("fotos")
       .select("tipo, url")
-      .eq("agendamento_id", agendamentoId);
+      .eq("agendamento_id", agendamentoId)
+      .order("timestamp_servidor", { ascending: true });
 
     if (erroFotos) throw erroFotos;
 
-    const fotoAntes = fotos.find(function (f) { return f.tipo === "antes"; });
-    const fotoDepois = fotos.find(function (f) { return f.tipo === "depois"; });
+    const fotosAntes = fotos.filter(function (f) { return f.tipo === "antes"; });
+    const fotosDepois = fotos.filter(function (f) { return f.tipo === "depois"; });
 
     const veiculo = agendamento.veiculos;
     const statusClasse = agendamento.status;
@@ -169,14 +198,18 @@ async function carregarAgendamento() {
         '<div class="linha"><span>Veículo</span><span>' + (veiculo.modelo || "-") + ' ' + (veiculo.cor || "") + '</span></div>' +
         '<div class="linha"><span>Placa</span><span>' + veiculo.placa + '</span></div>' +
       '</div>' +
-      '<p class="rotulo-foto">Fotos do veículo</p>' +
-      '<div class="fotos">' +
-        gerarBlocoFoto(fotoAntes, "antes") +
-        gerarBlocoFoto(fotoDepois, "depois") +
-      '</div>' +
+      '<p class="rotulo-foto">Fotos de antes</p>' +
+      '<div class="fotos">' + gerarGaleria(fotosAntes, "antes") + '</div>' +
+      '<p class="rotulo-foto">Fotos de depois</p>' +
+      '<div class="fotos">' + gerarGaleria(fotosDepois, "depois") + '</div>' +
       '<button type="button" class="secundario" id="botao-atualizar">Atualizar</button>';
 
     document.getElementById("botao-atualizar").addEventListener("click", carregarAgendamento);
+    document.querySelectorAll(".foto-box[data-url]").forEach(function (box) {
+      box.addEventListener("click", function () {
+        abrirLightbox(box.getAttribute("data-url"));
+      });
+    });
 
   } catch (erro) {
     console.error(erro);
@@ -184,12 +217,14 @@ async function carregarAgendamento() {
   }
 }
 
-function gerarBlocoFoto(foto, tipo) {
-  if (foto) {
-    return '<div class="foto-box"><img src="' + foto.url + '" alt="Foto do veículo (' + tipo + ')"></div>';
+function gerarGaleria(listaFotos, tipo) {
+  if (listaFotos.length === 0) {
+    const texto = tipo === "antes" ? "aguardando início" : "aguardando conclusão";
+    return '<div class="foto-box pendente">' + texto + '</div>';
   }
-  const texto = tipo === "antes" ? "aguardando início" : "aguardando conclusão";
-  return '<div class="foto-box pendente">' + texto + '</div>';
+  return listaFotos.map(function (foto) {
+    return '<div class="foto-box" data-url="' + foto.url + '"><img src="' + foto.url + '" alt="Foto do veículo (' + tipo + ')"></div>';
+  }).join("");
 }
 
 carregarAgendamento();
