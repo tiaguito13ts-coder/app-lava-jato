@@ -50,7 +50,7 @@ p.subtitulo { font-size: 12px; color: var(--texto-secundario); margin: 0 0 14px;
 h2 { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--texto-secundario); margin: 0 0 8px; }
 
 .foto-bloco { margin-bottom: 18px; }
-.galeria { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 8px; }
+.galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .foto-box {
   aspect-ratio: 4/3;
   background: var(--superficie);
@@ -167,7 +167,7 @@ const rotulosStatus = {
 };
 
 const ordemStatus = ["agendado", "em_andamento", "concluido"];
-const LIMITE_FOTOS_POR_TIPO = 4;
+const LIMITE_FOTOS_POR_TIPO = 10;
 
 function formatarDataHora(isoString) {
   const data = new Date(isoString);
