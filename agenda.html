@@ -105,37 +105,51 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
 .carregando, .vazio, .erro { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 30px 0; }
 .erro { color: var(--vermelho-texto); }
 
-.quadro-futuros { margin-bottom: 18px; }
+.quadro-futuros {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 220px;
+  max-width: calc(100vw - 32px);
+  background: var(--superficie);
+  border: 1px solid var(--dourado);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 50;
+  overflow: hidden;
+}
 .cabecalho-futuros {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 11px 12px;
-  background: var(--superficie);
-  border: 1px solid var(--borda);
-  border-radius: 6px;
-  color: var(--texto);
-  font-size: 13px;
-  font-weight: 600;
+  padding: 10px 12px;
+  background: var(--dourado-bg, #2A2415);
+  border: none;
+  border-bottom: 1px solid var(--borda);
+  color: var(--dourado);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
 }
-.cabecalho-futuros:hover { border-color: var(--dourado); }
-.lista-futuros { margin-top: 8px; max-height: 320px; overflow-y: auto; }
+.lista-futuros { padding: 8px; max-height: 320px; overflow-y: auto; }
 .lista-futuros.oculto { display: none; }
 .item-futuro {
   display: block;
   border: 1px solid var(--borda);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 6px;
+  padding: 8px 10px;
   margin-bottom: 6px;
-  background: var(--superficie);
+  background: var(--fundo);
   text-decoration: none;
   color: inherit;
 }
-.item-futuro .linha1 { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; }
-.item-futuro .linha2 { font-size: 11px; color: var(--texto-secundario); margin-top: 2px; }
+.item-futuro:last-child { margin-bottom: 0; }
+.item-futuro:hover { border-color: var(--dourado); }
+.item-futuro .linha1 { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; gap: 6px; }
+.item-futuro .linha2 { font-size: 10px; color: var(--texto-secundario); margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -158,10 +172,10 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
 
   <div class="quadro-futuros">
     <button type="button" class="cabecalho-futuros" id="botao-futuros">
-      <span>📋 Agendamentos futuros</span>
-      <span id="seta-futuros">▾</span>
+      <span>📋 Próximos agendamentos</span>
+      <span id="seta-futuros">▴</span>
     </button>
-    <div id="lista-futuros" class="lista-futuros oculto"></div>
+    <div id="lista-futuros" class="lista-futuros"></div>
   </div>
 
   <div id="lista"></div>
@@ -223,16 +237,13 @@ inputData.value = formatarData(proximoDiaDeTrabalho(new Date()));
 const listaFuturos = document.getElementById("lista-futuros");
 const botaoFuturos = document.getElementById("botao-futuros");
 const setaFuturos = document.getElementById("seta-futuros");
-let futurosJaCarregados = false;
 
 botaoFuturos.addEventListener("click", function () {
-  const estaOculto = listaFuturos.classList.contains("oculto");
-  listaFuturos.classList.toggle("oculto");
-  setaFuturos.textContent = estaOculto ? "▴" : "▾";
-  if (estaOculto && !futurosJaCarregados) {
-    carregarAgendamentosFuturos();
-  }
+  const estaOculto = listaFuturos.classList.toggle("oculto");
+  setaFuturos.textContent = estaOculto ? "▾" : "▴";
 });
+
+carregarAgendamentosFuturos();
 
 async function carregarAgendamentosFuturos() {
   listaFuturos.innerHTML = '<p class="carregando">Carregando...</p>';
