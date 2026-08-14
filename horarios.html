@@ -68,6 +68,8 @@ p.hint { font-size: 13px; color: var(--texto-secundario); margin: 0 0 18px; }
 .slot.selecionado { border: 2px solid var(--dourado); background: var(--dourado-bg); color: var(--dourado); font-weight: 600; }
 
 .carregando, .vazio { font-size: 13px; color: var(--texto-secundario); text-align: center; padding: 24px 0; }
+.dia-bloqueado { border-color: var(--erro-texto); background: var(--erro-bg); }
+.texto-bloqueio { font-size: 12px; color: var(--erro-texto); margin: 0; line-height: 1.5; }
 button.primario {
   width: 100%;
   padding: 13px;
@@ -197,14 +199,28 @@ async function carregarProximosDiasComVaga() {
   const fim = diasCandidatos[diasCandidatos.length - 1] + "T23:59:59" + FUSO_BRASILIA;
 
   try {
-    const { data, error } = await db
-      .from("agendamentos")
-      .select("data_hora")
-      .gte("data_hora", inicio)
-      .lte("data_hora", fim)
-      .neq("status", "cancelado");
+    const [respostaAgendamentos, respostaBloqueios] = await Promise.all([
+      db.from("agendamentos")
+        .select("data_hora")
+        .gte("data_hora", inicio)
+        .lte("data_hora", fim)
+        .neq("status", "cancelado"),
+      db.from("bloqueios")
+        .select("data, motivo")
+        .gte("data", diasCandidatos[0])
+        .lte("data", diasCandidatos[diasCandidatos.length - 1])
+    ]);
 
-    if (error) throw error;
+    if (respostaAgendamentos.error) throw respostaAgendamentos.error;
+    if (respostaBloqueios.error) throw respostaBloqueios.error;
+
+    const data = respostaAgendamentos.data;
+
+    // Mapa de dias bloqueados por imprevisto: "2026-08-09" -> "motivo"
+    const bloqueiosPorDia = {};
+    respostaBloqueios.data.forEach(function (b) {
+      bloqueiosPorDia[b.data] = b.motivo;
+    });
 
     // Agrupa horários ocupados por data (ex: "2026-08-02": ["08:00"])
     const ocupadosPorDia = {};
@@ -217,25 +233,46 @@ async function carregarProximosDiasComVaga() {
       ocupadosPorDia[dataStr].push(horaStr);
     });
 
-    // Filtra só os dias que têm pelo menos 1 horário livre
-    const diasComVaga = diasCandidatos
-      .map(function (dataStr) {
-        const ocupados = ocupadosPorDia[dataStr] || [];
-        const disponiveis = GRADE_HORARIOS.filter(function (h) {
-          return !ocupados.includes(h);
-        });
-        return { data: dataStr, disponiveis: disponiveis };
-      })
-      .filter(function (dia) { return dia.disponiveis.length > 0; })
-      .slice(0, QUANTIDADE_DIAS_COM_VAGA);
+    // Monta a lista final, na ordem cronológica: dias bloqueados aparecem
+    // com o aviso; dias com vaga aparecem com os horários (até o limite).
+    const itensParaMostrar = [];
+    let contadorComVaga = 0;
 
-    if (diasComVaga.length === 0) {
+    diasCandidatos.forEach(function (dataStr) {
+      if (bloqueiosPorDia.hasOwnProperty(dataStr)) {
+        itensParaMostrar.push({ tipo: "bloqueado", data: dataStr, motivo: bloqueiosPorDia[dataStr] });
+        return;
+      }
+      if (contadorComVaga >= QUANTIDADE_DIAS_COM_VAGA) return;
+
+      const ocupados = ocupadosPorDia[dataStr] || [];
+      const disponiveis = GRADE_HORARIOS.filter(function (h) { return !ocupados.includes(h); });
+      if (disponiveis.length > 0) {
+        itensParaMostrar.push({ tipo: "disponivel", data: dataStr, disponiveis: disponiveis });
+        contadorComVaga++;
+      }
+    });
+
+    if (itensParaMostrar.length === 0) {
       areaDias.innerHTML = '<p class="vazio">Nenhum horário disponível nos próximos dias. Tente novamente mais tarde.</p>';
       return;
     }
 
     areaDias.innerHTML = "";
-    diasComVaga.forEach(function (dia) {
+    itensParaMostrar.forEach(function (item) {
+      if (item.tipo === "bloqueado") {
+        const aviso = document.createElement("div");
+        aviso.className = "dia-card dia-bloqueado";
+        aviso.innerHTML =
+          '<p class="dia-titulo">' + formatarRotuloDia(item.data) + '</p>' +
+          '<p class="texto-bloqueio">⚠️ Não estaremos atendendo nesta data' +
+          (item.motivo ? ": " + item.motivo : ", por motivo de força maior") +
+          '. Pedimos desculpas pelo transtorno — escolha outra data disponível abaixo.</p>';
+        areaDias.appendChild(aviso);
+        return;
+      }
+
+      const dia = item;
       const card = document.createElement("div");
       card.className = "dia-card";
 
@@ -287,6 +324,19 @@ botaoConfirmar.addEventListener("click", async function () {
   botaoConfirmar.textContent = "Confirmando...";
 
   try {
+    const dataDoAgendamento = horarioSelecionado.split("T")[0];
+    const { data: bloqueioExistente } = await db
+      .from("bloqueios")
+      .select("motivo")
+      .eq("data", dataDoAgendamento)
+      .maybeSingle();
+
+    if (bloqueioExistente) {
+      await carregarProximosDiasComVaga();
+      mostrarErro("Esse dia acabou de ser bloqueado pelo lava-rápido. Escolha outra data.");
+      return;
+    }
+
     const { data: novoAgendamento, error } = await db
       .from("agendamentos")
       .insert({
