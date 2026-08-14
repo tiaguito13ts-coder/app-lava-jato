@@ -146,6 +146,23 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
 .item-futuro:hover { border-color: var(--dourado); }
 .item-futuro .linha1 { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; gap: 6px; }
 .item-futuro .linha2 { font-size: 10px; color: var(--texto-secundario); margin-top: 2px; }
+
+.quadro-bloqueio { width: 100%; background: var(--superficie); border: 1px solid var(--vermelho-texto); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+.cabecalho-bloqueio {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; background: var(--vermelho-bg); border: none; border-bottom: 1px solid var(--borda);
+  color: var(--vermelho-texto); font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer;
+}
+.corpo-bloqueio { padding: 12px; }
+.corpo-bloqueio.oculto { display: none; }
+.corpo-bloqueio label { font-size: 11px; color: var(--texto-secundario); display: block; margin-bottom: 4px; }
+.corpo-bloqueio input { width: 100%; padding: 9px 10px; margin-bottom: 10px; border: 1px solid var(--borda); border-radius: 6px; font-size: 13px; background: var(--fundo); color: var(--texto); color-scheme: dark; }
+.primario-bloqueio { width: 100%; padding: 10px; background: var(--vermelho-texto); color: var(--fundo); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.primario-bloqueio:disabled { opacity: 0.5; cursor: default; }
+.item-bloqueado { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 8px 0; border-top: 1px solid var(--borda); margin-top: 8px; }
+.item-bloqueado button { background: none; border: none; color: var(--texto-secundario); font-size: 11px; cursor: pointer; text-decoration: underline; }
+.mensagem-erro { font-size: 12px; color: var(--vermelho-texto); background: var(--vermelho-bg); padding: 8px 10px; border-radius: 6px; margin: 8px 0 0; display: none; }
+.mensagem-erro.visivel { display: block; }
 </style>
 </head>
 <body>
@@ -172,6 +189,22 @@ input:focus { outline: none; border-color: var(--dourado); box-shadow: 0 0 0 3px
       <span id="seta-futuros">▴</span>
     </button>
     <div id="lista-futuros" class="lista-futuros"></div>
+  </div>
+
+  <div class="quadro-bloqueio">
+    <button type="button" class="cabecalho-bloqueio" id="botao-bloqueio">
+      <span>🚫 Bloquear um dia</span>
+      <span id="seta-bloqueio">▾</span>
+    </button>
+    <div id="corpo-bloqueio" class="corpo-bloqueio oculto">
+      <label for="data-bloqueio">Data a bloquear</label>
+      <input type="date" id="data-bloqueio">
+      <label for="motivo-bloqueio">Motivo (aparece pro cliente)</label>
+      <input type="text" id="motivo-bloqueio" placeholder="Ex: imprevisto pessoal">
+      <button type="button" class="primario-bloqueio" id="botao-confirmar-bloqueio">Bloquear este dia</button>
+      <p class="mensagem-erro" id="erro-bloqueio"></p>
+      <div id="lista-bloqueios"></div>
+    </div>
   </div>
 
   <div id="lista"></div>
@@ -240,6 +273,103 @@ botaoFuturos.addEventListener("click", function () {
 });
 
 carregarAgendamentosFuturos();
+
+// ============================================================
+// Bloqueio de dias (imprevistos)
+// ============================================================
+const botaoBloqueio = document.getElementById("botao-bloqueio");
+const corpoBloqueio = document.getElementById("corpo-bloqueio");
+const setaBloqueio = document.getElementById("seta-bloqueio");
+const inputDataBloqueio = document.getElementById("data-bloqueio");
+const inputMotivoBloqueio = document.getElementById("motivo-bloqueio");
+const botaoConfirmarBloqueio = document.getElementById("botao-confirmar-bloqueio");
+const erroBloqueio = document.getElementById("erro-bloqueio");
+const listaBloqueios = document.getElementById("lista-bloqueios");
+
+botaoBloqueio.addEventListener("click", function () {
+  const oculto = corpoBloqueio.classList.toggle("oculto");
+  setaBloqueio.textContent = oculto ? "▾" : "▴";
+  if (!oculto) carregarListaBloqueios();
+});
+
+async function carregarListaBloqueios() {
+  listaBloqueios.innerHTML = '<p class="carregando">Carregando...</p>';
+  try {
+    const hoje = formatarData(new Date());
+    const { data, error } = await db
+      .from("bloqueios")
+      .select("id, data, motivo")
+      .gte("data", hoje)
+      .order("data", { ascending: true });
+
+    if (error) throw error;
+
+    if (data.length === 0) {
+      listaBloqueios.innerHTML = '<p class="carregando">Nenhum dia bloqueado no momento.</p>';
+      return;
+    }
+
+    listaBloqueios.innerHTML = "";
+    data.forEach(function (bloqueio) {
+      const dataFormatada = new Date(bloqueio.data + "T00:00:00").toLocaleDateString("pt-BR");
+      const item = document.createElement("div");
+      item.className = "item-bloqueado";
+      item.innerHTML =
+        '<span>' + dataFormatada + (bloqueio.motivo ? " · " + bloqueio.motivo : "") + '</span>' +
+        '<button type="button" data-id="' + bloqueio.id + '">desbloquear</button>';
+      item.querySelector("button").addEventListener("click", function () {
+        desbloquearDia(bloqueio.id);
+      });
+      listaBloqueios.appendChild(item);
+    });
+  } catch (erro) {
+    console.error(erro);
+    listaBloqueios.innerHTML = '<p class="carregando">Erro ao carregar bloqueios.</p>';
+  }
+}
+
+async function desbloquearDia(id) {
+  try {
+    const { error } = await db.from("bloqueios").delete().eq("id", id);
+    if (error) throw error;
+    carregarListaBloqueios();
+  } catch (erro) {
+    console.error(erro);
+  }
+}
+
+botaoConfirmarBloqueio.addEventListener("click", async function () {
+  erroBloqueio.classList.remove("visivel");
+  const data = inputDataBloqueio.value;
+  const motivo = inputMotivoBloqueio.value.trim();
+
+  if (!data) {
+    erroBloqueio.textContent = "Escolha uma data.";
+    erroBloqueio.classList.add("visivel");
+    return;
+  }
+
+  botaoConfirmarBloqueio.disabled = true;
+  botaoConfirmarBloqueio.textContent = "Bloqueando...";
+
+  try {
+    const { error } = await db.from("bloqueios").insert({ data: data, motivo: motivo || null });
+    if (error) throw error;
+
+    inputDataBloqueio.value = "";
+    inputMotivoBloqueio.value = "";
+    carregarListaBloqueios();
+  } catch (erro) {
+    console.error(erro);
+    erroBloqueio.textContent = erro.code === "23505"
+      ? "Esse dia já está bloqueado."
+      : "Não foi possível bloquear: " + (erro.message || "erro desconhecido");
+    erroBloqueio.classList.add("visivel");
+  } finally {
+    botaoConfirmarBloqueio.disabled = false;
+    botaoConfirmarBloqueio.textContent = "Bloquear este dia";
+  }
+});
 
 async function carregarAgendamentosFuturos() {
   listaFuturos.innerHTML = '<p class="carregando">Carregando...</p>';
