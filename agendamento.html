@@ -97,6 +97,34 @@ p.limite-fotos { font-size: 12px; color: var(--texto-secundario); text-align: ce
 }
 .lightbox.aberto { display: flex; }
 .lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+.lightbox-seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1000;
+}
+.lightbox-seta:hover { background: rgba(255,255,255,0.2); }
+.lightbox-anterior { left: 12px; }
+.lightbox-proxima { right: 12px; }
+.lightbox-contador {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 12px;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
 
 .status-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
 .status-botao {
@@ -143,7 +171,10 @@ button.cancelar:hover { background: var(--vermelho-bg); }
 </div>
 
 <div class="lightbox" id="lightbox">
+  <button type="button" class="lightbox-seta lightbox-anterior" id="lightbox-anterior">‹</button>
   <img id="lightbox-img" src="" alt="Foto ampliada">
+  <button type="button" class="lightbox-seta lightbox-proxima" id="lightbox-proxima">›</button>
+  <p class="lightbox-contador" id="lightbox-contador"></p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -176,14 +207,39 @@ function formatarDataHora(isoString) {
          data.getMinutes().toString().padStart(2, "0");
 }
 
-function abrirLightbox(url) {
-  document.getElementById("lightbox-img").src = url;
+let galeriaAtualLightbox = [];
+let indiceAtualLightbox = 0;
+
+function abrirLightbox(listaUrls, indiceInicial) {
+  galeriaAtualLightbox = listaUrls;
+  indiceAtualLightbox = indiceInicial;
+  atualizarImagemLightbox();
   document.getElementById("lightbox").classList.add("aberto");
+}
+function atualizarImagemLightbox() {
+  document.getElementById("lightbox-img").src = galeriaAtualLightbox[indiceAtualLightbox];
+  document.getElementById("lightbox-contador").textContent =
+    (indiceAtualLightbox + 1) + " / " + galeriaAtualLightbox.length;
+  const mostrarSetas = galeriaAtualLightbox.length > 1;
+  document.getElementById("lightbox-anterior").style.display = mostrarSetas ? "block" : "none";
+  document.getElementById("lightbox-proxima").style.display = mostrarSetas ? "block" : "none";
 }
 function fecharLightbox() {
   document.getElementById("lightbox").classList.remove("aberto");
 }
-document.getElementById("lightbox").addEventListener("click", fecharLightbox);
+document.getElementById("lightbox").addEventListener("click", function (evento) {
+  if (evento.target.id === "lightbox") fecharLightbox();
+});
+document.getElementById("lightbox-anterior").addEventListener("click", function (evento) {
+  evento.stopPropagation();
+  indiceAtualLightbox = (indiceAtualLightbox - 1 + galeriaAtualLightbox.length) % galeriaAtualLightbox.length;
+  atualizarImagemLightbox();
+});
+document.getElementById("lightbox-proxima").addEventListener("click", function (evento) {
+  evento.stopPropagation();
+  indiceAtualLightbox = (indiceAtualLightbox + 1) % galeriaAtualLightbox.length;
+  atualizarImagemLightbox();
+});
 
 async function carregarTela() {
   if (!agendamentoId) {
@@ -254,7 +310,7 @@ async function carregarTela() {
 }
 
 function gerarGaleria(listaFotos, tipo) {
-  let html = '<div class="galeria">';
+  let html = '<div class="galeria" id="galeria-' + tipo + '">';
 
   if (listaFotos.length === 0) {
     html += '<div class="foto-box vazia">Nenhuma foto ainda</div>';
@@ -277,9 +333,13 @@ function gerarGaleria(listaFotos, tipo) {
 }
 
 function ligarCliqueNasFotos() {
-  document.querySelectorAll(".foto-box[data-url]").forEach(function (box) {
-    box.addEventListener("click", function () {
-      abrirLightbox(box.getAttribute("data-url"));
+  document.querySelectorAll(".galeria").forEach(function (galeria) {
+    const boxes = Array.from(galeria.querySelectorAll(".foto-box[data-url]"));
+    const urls = boxes.map(function (b) { return b.getAttribute("data-url"); });
+    boxes.forEach(function (box, indice) {
+      box.addEventListener("click", function () {
+        abrirLightbox(urls, indice);
+      });
     });
   });
 }
